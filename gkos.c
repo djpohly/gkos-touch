@@ -3,6 +3,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 
 #define GRID_X 110
@@ -178,6 +179,15 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 		return 1;
 	state->nwins = num_btns;
 
+	// Set up the class hint for the windows
+	XClassHint *class = XAllocClassHint();
+	if (!class) {
+		fprintf(stderr, "Failed to allocate class hint\n");
+		free(state->wins);
+		return 1;
+	}
+	class->res_name = class->res_class = "GKOS-multitouch";
+
 	// Create and map the windows
 	Screen *scr = DefaultScreenOfDisplay(state->dpy);
 	int swidth = WidthOfScreen(scr);
@@ -197,11 +207,16 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 				1, CopyFromParent, InputOutput, CopyFromParent,
 				CWBackPixel | CWBorderPixel | CWOverrideRedirect,
 				&attrs);
-		state->wins[i].mapped = 0;
 		state->wins[i].bits = btns[i].bits;
+		state->wins[i].mapped = 0;
+
+		XSetClassHint(state->dpy, state->wins[i].win, class);
 		XSelectInput(state->dpy, state->wins[i].win, StructureNotifyMask);
 		XMapWindow(state->dpy, state->wins[i].win);
 	}
+
+	// Free the class hint
+	XFree(class);
 
 	// Wait for windows to map
 	XEvent ev;
