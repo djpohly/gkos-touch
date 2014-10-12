@@ -331,11 +331,7 @@ int main(int argc, char **argv)
 
 	// Get a specific device if given, otherwise find anything capable of
 	// direct-style touch input
-	int id;
-	if (argc >= 2)
-		id = atoi(argv[1]);
-	else
-		id = XIAllDevices;
+	int id = (argc > 1) ? atoi(argv[1]) : XIAllDevices;
 	ret = init_touch_device(&state, id);
 	if (ret)
 		goto out_close;
