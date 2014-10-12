@@ -345,13 +345,14 @@ int main(int argc, char **argv)
 			sizeof(default_btns) / sizeof(default_btns[0]));
 	if (ret) {
 		fprintf(stderr, "Failed to create windows\n");
-		goto out_close;
+		goto out_destroy_touch;
 	}
 
 	ret = event_loop(&state);
 
 	destroy_windows(&state);
 
+out_destroy_touch:
 	destroy_touch_device(&state);
 
 out_close:
