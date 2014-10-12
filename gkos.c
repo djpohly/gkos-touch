@@ -228,17 +228,9 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev,
 		int *touches, uint8_t *bits)
 {
 	struct layout_win *win;
-	XSetWindowAttributes unpressed = {
-		.background_pixel = BlackPixel(state->dpy, DefaultScreen(state->dpy)),
-	};
-	XSetWindowAttributes pressed = {
-		.background_pixel = WhitePixel(state->dpy, DefaultScreen(state->dpy)),
-	};
 	switch (ev->evtype) {
 		case XI_TouchBegin:
 			win = get_layout_win(state, ev->event);
-			XChangeWindowAttributes(state->dpy, ev->event,
-					CWBackPixel, &pressed);
 			*bits |= win->bits;
 			fprintf(stderr, "bits: %u\n", *bits);
 			(*touches)++;
@@ -248,8 +240,6 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev,
 			break;
 		case XI_TouchEnd:
 			win = get_layout_win(state, ev->event);
-			XChangeWindowAttributes(state->dpy, ev->event,
-					CWBackPixel, &unpressed);
 			*bits &= ~win->bits;
 			(*touches)--;
 			fprintf(stderr, "bits: %u\n", *bits);
