@@ -51,12 +51,11 @@ static const struct layout_btn default_btns[] = {
 	{-1, 4, 1, 32},
 };
 
-#define NUM_WINDOWS 14
 struct kbd_state {
 	Display *dpy;
 	int xi_opcode;
 	int input_dev;
-	struct layout_win wins[NUM_WINDOWS];
+	struct layout_win *wins;
 	int nwins;
 };
 
@@ -150,12 +149,19 @@ void ungrab_touches(struct kbd_state *state, int i)
 /*
  * Creates and maps windows for the GKOS keyboard.
  */
-int create_windows(struct kbd_state *state, const struct layout_btn *btns)
+int create_windows(struct kbd_state *state, const struct layout_btn *btns,
+		int num_btns)
 {
 	int i;
-	Screen *scr = DefaultScreenOfDisplay(state->dpy);
+
+	// Allocate space for windows
+	state->wins = malloc(sizeof(state->wins[0]) * num_btns);
+	if (!state->wins)
+		return 1;
+	state->nwins = num_btns;
 
 	// Create and map the windows
+	Screen *scr = DefaultScreenOfDisplay(state->dpy);
 	int swidth = WidthOfScreen(scr);
 	XSetWindowAttributes attrs = {
 		.background_pixel = BlackPixelOfScreen(scr),
@@ -216,6 +222,7 @@ void destroy_windows(struct kbd_state *state)
 		ungrab_touches(state, i);
 		XDestroyWindow(state->dpy, state->wins[i].win);
 	}
+	free(state->wins);
 }
 
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev,
@@ -330,8 +337,8 @@ int main(int argc, char **argv)
 	}
 
 	// Create and map windows for keyboard
-	state.nwins = NUM_WINDOWS;
-	ret = create_windows(&state, default_btns);
+	ret = create_windows(&state, default_btns,
+			sizeof(default_btns) / sizeof(default_btns[0]));
 	if (ret) {
 		fprintf(stderr, "Failed to create windows\n");
 		goto out_close;
