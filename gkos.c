@@ -243,6 +243,9 @@ void destroy_windows(struct kbd_state *state)
 	free(state->wins);
 }
 
+/*
+ * Remember a window as "touched" at the start of a touch event
+ */
 int add_touch(struct kbd_state *state, Window win)
 {
 	struct layout_win *lwin = get_layout_win(state, win);
@@ -263,6 +266,9 @@ int add_touch(struct kbd_state *state, Window win)
 	return 0;
 }
 
+/*
+ * Unregister a touched window when the touch is released
+ */
 int remove_touch(struct kbd_state *state, Window win)
 {
 	int i;
@@ -278,6 +284,9 @@ int remove_touch(struct kbd_state *state, Window win)
 	return 0;
 }
 
+/*
+ * Calculate the bits corresponding to the currently touched windows
+ */
 uint8_t get_pressed_bits(struct kbd_state *state)
 {
 	uint8_t bits = 0;
