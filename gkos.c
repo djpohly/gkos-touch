@@ -55,8 +55,10 @@ struct kbd_state {
 	Display *dpy;
 	int xi_opcode;
 	int input_dev;
-	struct layout_win *wins;
 	int nwins;
+	int ntouches;
+	struct layout_win *wins;
+	struct layout_win **touches;
 };
 
 
@@ -64,7 +66,7 @@ struct kbd_state {
  * Searches the input hierarchy for a touch-capable device.  The id parameter
  * gives a specific device ID to check, XIAllDevices, or XIAllMasterDevices.
  */
-int get_touch_device(struct kbd_state *state, int id)
+int init_touch_device(struct kbd_state *state, int id)
 {
 	// Get list of input devices and parameters
 	XIDeviceInfo *di;
@@ -72,11 +74,10 @@ int get_touch_device(struct kbd_state *state, int id)
 	di = XIQueryDevice(state->dpy, id, &ndev);
 	if (!di) {
 		fprintf(stderr, "Failed to query devices\n");
-		return -1;
+		return 1;
 	}
 
 	// Find any direct touch devices (such as touchscreens)
-	id = -1;
 	int i;
 	for (i = 0; i < ndev; i++) {
 		int j;
@@ -85,7 +86,8 @@ int get_touch_device(struct kbd_state *state, int id)
 				(XITouchClassInfo *) di[i].classes[j];
 			if (tci->type == XITouchClass &&
 					tci->mode == XIDirectTouch) {
-				id = di[i].deviceid;
+				state->input_dev = di[i].deviceid;
+				state->ntouches = tci->num_touches;
 				goto done;
 			}
 		}
@@ -93,7 +95,23 @@ int get_touch_device(struct kbd_state *state, int id)
 
 done:
 	XIFreeDeviceInfo(di);
-	return id;
+	if (i >= ndev) {
+		fprintf(stderr, "No touch device found\n");
+		return 1;
+	}
+
+	state->touches = calloc(state->ntouches, sizeof(state->touches[0]));
+	if (!state->touches) {
+		fprintf(stderr, "Failed to allocate touches\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+void destroy_touch_device(struct kbd_state *state)
+{
+	free(state->touches);
 }
 
 struct layout_win *get_layout_win(struct kbd_state *state, Window win)
@@ -154,7 +172,7 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	int i;
 
 	// Allocate space for windows
-	state->wins = malloc(sizeof(state->wins[0]) * num_btns);
+	state->wins = calloc(num_btns, sizeof(state->wins[0]));
 	if (!state->wins)
 		return 1;
 	state->nwins = num_btns;
@@ -318,12 +336,9 @@ int main(int argc, char **argv)
 		id = atoi(argv[1]);
 	else
 		id = XIAllDevices;
-	state.input_dev = get_touch_device(&state, id);
-	if (state.input_dev < 0) {
-		ret = 1;
-		fprintf(stderr, "Couldn't find a direct-touch device\n");
+	ret = init_touch_device(&state, id);
+	if (ret)
 		goto out_close;
-	}
 
 	// Create and map windows for keyboard
 	ret = create_windows(&state, default_btns,
@@ -336,6 +351,8 @@ int main(int argc, char **argv)
 	ret = event_loop(&state);
 
 	destroy_windows(&state);
+
+	destroy_touch_device(&state);
 
 out_close:
 	XCloseDisplay(state.dpy);
