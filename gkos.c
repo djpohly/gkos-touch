@@ -59,6 +59,7 @@ struct kbd_state {
 	int ntouches;
 	struct layout_win *wins;
 	struct layout_win **touches;
+	unsigned int active : 1;
 };
 
 
@@ -242,25 +243,69 @@ void destroy_windows(struct kbd_state *state)
 	free(state->wins);
 }
 
-int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev,
-		int *touches, uint8_t *bits)
+int add_touch(struct kbd_state *state, Window win)
 {
-	struct layout_win *win;
+	struct layout_win *lwin = get_layout_win(state, win);
+	if (!lwin) {
+		fprintf(stderr, "Couldn't get touched window\n");
+		return 1;
+	}
+
+	int i;
+	for (i = 0; i < state->ntouches && state->touches[i]; i++)
+		;
+	if (i >= state->ntouches) {
+		fprintf(stderr, "No open touch slots found\n");
+		return 1;
+	}
+
+	state->touches[i] = lwin;
+	return 0;
+}
+
+int remove_touch(struct kbd_state *state, Window win)
+{
+	int i;
+	for (i = 0; i < state->ntouches; i++)
+		if (state->touches[i] && state->touches[i]->win == win)
+			break;
+	if (i >= state->ntouches) {
+		fprintf(stderr, "Released window was not touched\n");
+		return 1;
+	}
+
+	state->touches[i] = NULL;
+	return 0;
+}
+
+uint8_t get_pressed_bits(struct kbd_state *state)
+{
+	uint8_t bits = 0;
+	int i;
+	for (i = 0; i < state->ntouches; i++)
+		if (state->touches[i])
+			bits |= state->touches[i]->bits;
+	return bits;
+}
+
+int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
+{
 	switch (ev->evtype) {
 		case XI_TouchBegin:
-			win = get_layout_win(state, ev->event);
-			*bits |= win->bits;
-			fprintf(stderr, "bits: %u\n", *bits);
-			(*touches)++;
+			if (add_touch(state, ev->event))
+				return 1;
+			state->active = 1;
 			break;
 		case XI_TouchUpdate:
 			//fprintf(stderr, "touch update\n");
 			break;
 		case XI_TouchEnd:
-			win = get_layout_win(state, ev->event);
-			*bits &= ~win->bits;
-			(*touches)--;
-			fprintf(stderr, "bits: %u\n", *bits);
+			if (state->active) {
+				fprintf(stderr, "bits %u\n", get_pressed_bits(state));
+				state->active = 0;
+			}
+			if (remove_touch(state, ev->event))
+				return 1;
 			break;
 		default:
 			fprintf(stderr, "other event %d\n", ev->evtype);
@@ -277,14 +322,12 @@ int event_loop(struct kbd_state *state)
 	XEvent ev;
 	XGenericEventCookie *cookie = &ev.xcookie;
 
-	int touches = 0;
-	uint8_t bits = 0;
 	while (XNextEvent(state->dpy, &ev) == Success) {
 		if (ev.type == GenericEvent &&
 				cookie->extension == state->xi_opcode &&
 				XGetEventData(state->dpy, cookie)) {
 			// GenericEvent from XInput
-			handle_xi_event(state, cookie->data, &touches, &bits);
+			handle_xi_event(state, cookie->data);
 			XFreeEventData(state->dpy, cookie);
 		} else {
 			// Regular event type
@@ -303,6 +346,7 @@ int main(int argc, char **argv)
 	int ret = 0;
 
 	struct kbd_state state;
+	state.active = 0;
 
 	// Open display
 	state.dpy = XOpenDisplay(NULL);
