@@ -135,15 +135,14 @@ int grab_touches(struct kbd_state *state, Window win)
 /*
  * Releases passive grabs for touch events
  */
-void ungrab_touches(struct kbd_state *state, int i)
+void ungrab_touches(struct kbd_state *state, Window win)
 {
 	// Reconstruct modifier structure
 	XIGrabModifiers mods;
 	mods.modifiers = XIAnyModifier;
 
 	// Ungrab all the things
-	XIUngrabTouchBegin(state->dpy, state->input_dev, state->wins[i].win,
-			1, &mods);
+	XIUngrabTouchBegin(state->dpy, state->input_dev, win, 1, &mods);
 }
 
 /*
@@ -219,7 +218,7 @@ void destroy_windows(struct kbd_state *state)
 {
 	int i;
 	for (i = 0; i < state->nwins; i++) {
-		ungrab_touches(state, i);
+		ungrab_touches(state, state->wins[i].win);
 		XDestroyWindow(state->dpy, state->wins[i].win);
 	}
 	free(state->wins);
