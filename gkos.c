@@ -54,6 +54,8 @@ static const struct layout_btn default_btns[] = {
 
 struct kbd_state {
 	Display *dpy;
+	XVisualInfo xvi;
+	Colormap cmap;
 	int xi_opcode;
 	int input_dev;
 	int nwins;
@@ -195,9 +197,10 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	Screen *scr = DefaultScreenOfDisplay(state->dpy);
 	int swidth = WidthOfScreen(scr);
 	XSetWindowAttributes attrs = {
-		.background_pixel = BlackPixelOfScreen(scr),
-		.border_pixel = WhitePixelOfScreen(scr),
+		.background_pixel = 0xa0000000,
+		.border_pixel = 0xff333333,
 		.override_redirect = True,
+		.colormap = state->cmap,
 	};
 	for (i = 0; i < state->nwins; i++) {
 		int x = btns[i].x * GRID_X;
@@ -206,14 +209,16 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 		int y = btns[i].y * GRID_Y + TOP_Y;
 		int h = btns[i].h * GRID_Y;
 		state->wins[i].win = XCreateWindow(state->dpy,
-				DefaultRootWindow(state->dpy), x, y, GRID_X, h,
-				1, CopyFromParent, InputOutput, CopyFromParent,
-				CWBackPixel | CWBorderPixel | CWOverrideRedirect,
+				DefaultRootWindow(state->dpy), x, y, GRID_X-2, h-2, 1,
+				state->xvi.depth, InputOutput, state->xvi.visual,
+				CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap,
 				&attrs);
 		state->wins[i].bits = btns[i].bits;
 		state->wins[i].mapped = 0;
 
 		XSetClassHint(state->dpy, state->wins[i].win, class);
+
+		// Select for MapNotify events, then map the window
 		XSelectInput(state->dpy, state->wins[i].win, StructureNotifyMask);
 		XMapWindow(state->dpy, state->wins[i].win);
 	}
@@ -406,6 +411,17 @@ int main(int argc, char **argv)
 	ret = init_touch_device(&state, id);
 	if (ret)
 		goto out_close;
+
+	// Get visual and colormap for transparent windows
+	ret = !XMatchVisualInfo(state.dpy, DefaultScreen(state.dpy),
+				32, TrueColor, &state.xvi);
+	if (ret) {
+		fprintf(stderr, "Couldn't find 32-bit visual\n");
+		goto out_close;
+	}
+
+	state.cmap = XCreateColormap(state.dpy, DefaultRootWindow(state.dpy),
+			state.xvi.visual, AllocNone);
 
 	// Create and map windows for keyboard
 	ret = create_windows(&state, default_btns,
