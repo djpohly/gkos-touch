@@ -6,7 +6,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 
-#define GRID_X 110
+#define GRID_X 130
 #define GRID_Y 70
 #define TOP_Y 400
 
