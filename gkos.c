@@ -116,15 +116,6 @@ void destroy_touch_device(struct kbd_state *state)
 	free(state->touches);
 }
 
-struct layout_win *get_layout_win(struct kbd_state *state, Window win)
-{
-	int i;
-	for (i = 0; i < state->nwins; i++)
-		if (state->wins[i].win == win)
-			return &state->wins[i];
-	return NULL;
-}
-
 /*
  * Establishes passive grabs for touch events on the given window
  */
@@ -163,6 +154,18 @@ void ungrab_touches(struct kbd_state *state, Window win)
 
 	// Ungrab all the things
 	XIUngrabTouchBegin(state->dpy, state->input_dev, win, 1, &mods);
+}
+
+/*
+ * Returns the button window structure corresponding to a given X Window
+ */
+struct layout_win *get_layout_win(struct kbd_state *state, Window win)
+{
+	int i;
+	for (i = 0; i < state->nwins; i++)
+		if (state->wins[i].win == win)
+			return &state->wins[i];
+	return NULL;
 }
 
 /*
