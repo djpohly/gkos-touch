@@ -26,7 +26,6 @@ struct layout_btn {
 struct layout_win {
 	Window win;
 	uint8_t bits;
-	unsigned mapped : 1;
 };
 
 /*
@@ -56,6 +55,7 @@ struct kbd_state {
 	Display *dpy;
 	XVisualInfo xvi;
 	Colormap cmap;
+	Window win;
 	int xi_opcode;
 	int input_dev;
 	int nwins;
@@ -193,66 +193,62 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	}
 	class->res_name = class->res_class = "GKOS-multitouch";
 
-	// Create and map the windows
+	// Create the main fullscreen window
 	Screen *scr = DefaultScreenOfDisplay(state->dpy);
 	int swidth = WidthOfScreen(scr);
+	int sheight = HeightOfScreen(scr);
 	XSetWindowAttributes attrs = {
-		.background_pixel = 0xa0000000,
-		.border_pixel = 0xff333333,
+		.background_pixel = 0x00000000,
+		.border_pixel = 0x00000000,
 		.override_redirect = True,
 		.colormap = state->cmap,
 	};
+	state->win = XCreateWindow(state->dpy, DefaultRootWindow(state->dpy),
+			0, 0, swidth, sheight, 0,
+			state->xvi.depth, InputOutput, state->xvi.visual,
+			CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap, &attrs);
+	XSetClassHint(state->dpy, state->win, class);
+	XSelectInput(state->dpy, state->win, StructureNotifyMask);
+
+	// Free the class hint
+	XFree(class);
+
+	// Prepare attributes for subwindows
+	attrs.background_pixel = 0xd0204a87;
+	attrs.border_pixel = 0xffeeeeec;
+
 	for (i = 0; i < state->nwins; i++) {
+		// Calculate window position in grid
 		int x = btns[i].x * GRID_X;
 		if (x < 0)
 			x += swidth;
 		int y = btns[i].y * GRID_Y + TOP_Y;
 		int h = btns[i].h * GRID_Y;
-		state->wins[i].win = XCreateWindow(state->dpy,
-				DefaultRootWindow(state->dpy), x, y, GRID_X-2, h-2, 1,
+
+		// Create subwindow
+		state->wins[i].win = XCreateWindow(state->dpy, state->win,
+				x, y, GRID_X-2, h-2, 1,
 				state->xvi.depth, InputOutput, state->xvi.visual,
 				CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap,
 				&attrs);
 		state->wins[i].bits = btns[i].bits;
-		state->wins[i].mapped = 0;
-
-		XSetClassHint(state->dpy, state->wins[i].win, class);
-
-		// Select for MapNotify events, then map the window
-		XSelectInput(state->dpy, state->wins[i].win, StructureNotifyMask);
-		XMapWindow(state->dpy, state->wins[i].win);
-	}
-
-	// Free the class hint
-	XFree(class);
-
-	// Wait for windows to map
-	XEvent ev;
-	while (i > 0 && XNextEvent(state->dpy, &ev) == Success) {
-		if (ev.type != MapNotify) {
-			fprintf(stderr, "unexpected event, type %d\n", ev.type);
-			return 1;
-		}
-
-		struct layout_win *win = get_layout_win(state, ev.xmap.event);
-		if (!win) {
-			fprintf(stderr, "um, what window?\n");
-			return 1;
-		}
-		if (win->mapped) {
-			fprintf(stderr, "mapped again?\n");
-			return 1;
-		}
-		win->mapped = 1;
 
 		// Grab touch events for the new window
-		if (grab_touches(state, ev.xmap.event)) {
+		if (grab_touches(state, state->wins[i].win)) {
 			fprintf(stderr, "Failed to grab touch event\n");
 			return 1;
 		}
-
-		i--;
 	}
+
+	// Map everything and wait for the notify event
+	XMapSubwindows(state->dpy, state->win);
+	XMapWindow(state->dpy, state->win);
+
+	XEvent ev;
+	while (XMaskEvent(state->dpy, StructureNotifyMask, &ev) == Success &&
+			(ev.type != MapNotify || ev.xmap.event != state->win))
+		;
+
 	return 0;
 }
 
