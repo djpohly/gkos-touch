@@ -260,6 +260,8 @@ void destroy_windows(struct kbd_state *state)
 		XDestroyWindow(state->dpy, state->wins[i].win);
 	}
 	free(state->wins);
+
+	XDestroyWindow(state->dpy, state->win);
 }
 
 /*
