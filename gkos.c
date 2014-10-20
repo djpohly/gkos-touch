@@ -255,12 +255,11 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 void destroy_windows(struct kbd_state *state)
 {
 	int i;
-	for (i = 0; i < state->nwins; i++) {
-		ungrab_touches(state, state->wins[i].win);
+	for (i = 0; i < state->nwins; i++)
 		XDestroyWindow(state->dpy, state->wins[i].win);
-	}
 	free(state->wins);
 
+	ungrab_touches(state, state->win);
 	XDestroyWindow(state->dpy, state->win);
 }
 
