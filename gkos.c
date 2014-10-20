@@ -418,7 +418,7 @@ int main(int argc, char **argv)
 				32, TrueColor, &state.xvi);
 	if (ret) {
 		fprintf(stderr, "Couldn't find 32-bit visual\n");
-		goto out_close;
+		goto out_destroy_touch;
 	}
 
 	state.cmap = XCreateColormap(state.dpy, DefaultRootWindow(state.dpy),
