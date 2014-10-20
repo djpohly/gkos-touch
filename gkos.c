@@ -57,6 +57,7 @@ struct kbd_state {
 	XVisualInfo xvi;
 	Colormap cmap;
 	Window win;
+	GC gc;
 	int xi_opcode;
 	int input_dev;
 	int nwins;
@@ -284,6 +285,13 @@ int add_touch(struct kbd_state *state, Window win)
 		return 1;
 	}
 
+	XWindowAttributes attrs;
+	XGetWindowAttributes(state->dpy, win, &attrs);
+
+	XSetForeground(state->dpy, state->gc, 0xd0888a85);
+	XFillRectangle(state->dpy, win, state->gc, 0, 0,
+			attrs.width, attrs.height);
+
 	state->touches[i] = lwin;
 	return 0;
 }
@@ -301,6 +309,13 @@ int remove_touch(struct kbd_state *state, Window win)
 		fprintf(stderr, "Released window was not touched\n");
 		return 1;
 	}
+
+	XWindowAttributes attrs;
+	XGetWindowAttributes(state->dpy, win, &attrs);
+
+	XSetForeground(state->dpy, state->gc, 0xd0204a87);
+	XFillRectangle(state->dpy, win, state->gc, 0, 0,
+			attrs.width, attrs.height);
 
 	state->touches[i] = NULL;
 	return 0;
@@ -446,7 +461,11 @@ int main(int argc, char **argv)
 		goto out_free_cmap;
 	}
 
+	state.gc = XCreateGC(state.dpy, state.win, 0, NULL);
+
 	ret = event_loop(&state);
+
+	XFreeGC(state.dpy, state.gc);
 
 	destroy_windows(&state);
 
