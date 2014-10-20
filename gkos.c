@@ -5,6 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
+#include <fakekey/fakekey.h>
 
 #define GRID_X 130
 #define GRID_Y 70
@@ -62,6 +63,7 @@ struct kbd_state {
 	int ntouches;
 	struct layout_win *wins;
 	struct layout_win **touches;
+	FakeKey *fk;
 	unsigned int active : 1;
 };
 
@@ -364,7 +366,14 @@ int event_loop(struct kbd_state *state)
 			XFreeEventData(state->dpy, cookie);
 		} else {
 			// Regular event type
-			fprintf(stderr, "regular event %d\n", ev.type);
+			switch (ev.type) {
+				case MappingNotify:
+					XRefreshKeyboardMapping(&ev.xmapping);
+					fakekey_reload_keysyms(state->fk);
+					break;
+				default:
+					fprintf(stderr, "regular event %d\n", ev.type);
+			}
 		}
 	}
 
@@ -412,6 +421,11 @@ int main(int argc, char **argv)
 	ret = init_touch_device(&state, id);
 	if (ret)
 		goto out_close;
+
+	// Set up libfakekey
+	state.fk = fakekey_init(state.dpy);
+	if (!state.fk)
+		goto out_destroy_touch;
 
 	// Get visual and colormap for transparent windows
 	ret = !XMatchVisualInfo(state.dpy, DefaultScreen(state.dpy),
