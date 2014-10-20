@@ -443,12 +443,15 @@ int main(int argc, char **argv)
 			sizeof(default_btns) / sizeof(default_btns[0]));
 	if (ret) {
 		fprintf(stderr, "Failed to create windows\n");
-		goto out_destroy_touch;
+		goto out_free_cmap;
 	}
 
 	ret = event_loop(&state);
 
 	destroy_windows(&state);
+
+out_free_cmap:
+	XFreeColormap(state.dpy, state.cmap);
 
 out_destroy_touch:
 	destroy_touch_device(&state);
