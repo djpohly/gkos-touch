@@ -232,12 +232,12 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 				CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap,
 				&attrs);
 		state->wins[i].bits = btns[i].bits;
+	}
 
-		// Grab touch events for the new window
-		if (grab_touches(state, state->wins[i].win)) {
-			fprintf(stderr, "Failed to grab touch event\n");
-			return 1;
-		}
+	// Grab touch events for the new window
+	if (grab_touches(state, state->win)) {
+		fprintf(stderr, "Failed to grab touch event\n");
+		return 1;
 	}
 
 	// Map everything and wait for the notify event
@@ -322,7 +322,9 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 {
 	switch (ev->evtype) {
 		case XI_TouchBegin:
-			if (add_touch(state, ev->event))
+			if (!ev->child || ev->child == state->win)
+				break;
+			if (add_touch(state, ev->child))
 				return 1;
 			state->active = 1;
 			break;
@@ -330,11 +332,13 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 			//fprintf(stderr, "touch update\n");
 			break;
 		case XI_TouchEnd:
+			if (!ev->child || ev->child == state->win)
+				break;
 			if (state->active) {
 				fprintf(stderr, "bits %u\n", get_pressed_bits(state));
 				state->active = 0;
 			}
-			if (remove_touch(state, ev->event))
+			if (remove_touch(state, ev->child))
 				return 1;
 			break;
 		default:
