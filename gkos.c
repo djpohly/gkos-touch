@@ -11,6 +11,10 @@
 #define GRID_Y 70
 #define TOP_Y 400
 
+#define PRESSED_COLOR 0xd0888a85
+#define UNPRESSED_COLOR 0xd0204a87
+#define BORDER_COLOR 0xffeeeeec
+
 
 /*
  * Represents one button in a given layout
@@ -217,8 +221,8 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	XFree(class);
 
 	// Prepare attributes for subwindows
-	attrs.background_pixel = 0xd0204a87;
-	attrs.border_pixel = 0xffeeeeec;
+	attrs.background_pixel = UNPRESSED_COLOR;
+	attrs.border_pixel = BORDER_COLOR;
 
 	for (i = 0; i < state->nwins; i++) {
 		// Calculate window position in grid
@@ -288,7 +292,7 @@ int add_touch(struct kbd_state *state, Window win)
 	XWindowAttributes attrs;
 	XGetWindowAttributes(state->dpy, win, &attrs);
 
-	XSetForeground(state->dpy, state->gc, 0xd0888a85);
+	XSetForeground(state->dpy, state->gc, PRESSED_COLOR);
 	XFillRectangle(state->dpy, win, state->gc, 0, 0,
 			attrs.width, attrs.height);
 
@@ -313,7 +317,7 @@ int remove_touch(struct kbd_state *state, Window win)
 	XWindowAttributes attrs;
 	XGetWindowAttributes(state->dpy, win, &attrs);
 
-	XSetForeground(state->dpy, state->gc, 0xd0204a87);
+	XSetForeground(state->dpy, state->gc, UNPRESSED_COLOR);
 	XFillRectangle(state->dpy, win, state->gc, 0, 0,
 			attrs.width, attrs.height);
 
