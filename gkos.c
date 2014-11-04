@@ -307,6 +307,19 @@ void destroy_windows(struct kbd_state *state)
 }
 
 /*
+ * Calculate the bits corresponding to the currently touched windows
+ */
+uint8_t get_pressed_bits(struct kbd_state *state)
+{
+	uint8_t bits = 0;
+	int i;
+	for (i = 0; i < state->ntouches; i++)
+		if (state->touches[i])
+			bits |= state->touches[i]->bits;
+	return bits;
+}
+
+/*
  * Remember a window as "touched" at the start of a touch event
  */
 int add_touch(struct kbd_state *state, Window win)
@@ -359,19 +372,6 @@ int remove_touch(struct kbd_state *state, Window win)
 
 	state->touches[i] = NULL;
 	return 0;
-}
-
-/*
- * Calculate the bits corresponding to the currently touched windows
- */
-uint8_t get_pressed_bits(struct kbd_state *state)
-{
-	uint8_t bits = 0;
-	int i;
-	for (i = 0; i < state->ntouches; i++)
-		if (state->touches[i])
-			bits |= state->touches[i]->bits;
-	return bits;
 }
 
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
