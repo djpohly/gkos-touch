@@ -5,10 +5,7 @@ import sys
 import json
 import subprocess
 
-if len(sys.argv) >= 2:
-    x = json.load(open(sys.argv[1]))
-else:
-    x = json.load(sys.stdin)
+x = json.load(sys.stdin)
 
 othermap=[7,9,15,18,23,27,31,36,39,45,47,54,55,56,57,58,59,60,61,62,63]
 others=["_BackSpace", "_Up", "*Left", "+Shift", "_Left", "_Prior", "_Escape",
@@ -73,35 +70,40 @@ def mapval(d, i):
 def keysym(d, i):
     orig = mapval(d, i)
     if orig == '':
-        return 'NONE', 'NoSymbol'
+        return 'NONE', '.sym = NoSymbol'
 #    try:
 #        return 'PRESS', syms[orig]
 #    except KeyError:
 #        pass
     if len(orig) == 1:
-        return 'PRESS', subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]])
-    if len(orig) == 1 and 'a' <= orig <= 'z':
-        return 'PRESS', 'XK_' + orig
+        return 'PRESS', ('.sym = ' +
+            subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]]))
+    if orig == '_Ins':
+        return 'PRESS', '.sym = XK_Insert'
     if orig[0] == '_':
-        return 'PRESS', 'XK' + orig
+        return 'PRESS', '.sym = XK' + orig
     if orig[0] == '+':
-        return 'MOD', 'XK_' + orig[1:] + '_L'
+        return 'MOD', '.sym = XK_' + orig[1:] + '_L'
     if orig[0] == '/':
-        return 'MAP', orig[1:]
-    return 'NONE', 'NoSymbol'
+        return 'MAP', '.map = ' + orig[1:]
+    return 'NONE', '.sym = NoSymbol'
     #return 'MACRO', '"' + orig + '"'
 
 def cstring(s):
     return '"' + s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
 
-print('union keymap map[][64] = {')
+namemap={
+        'lowercase': 'LETTERS',
+        'numbers': 'NUMBERS',
+        'symbols': 'SYMBOLS',
+}
 
-#for k in ['lowercase','uppercase','capslock','numbers','symbols']:
-for k in ['lowercase','numbers','symbols']:
-    print('\t[', k.upper(), '] = {', sep='')
+print('struct keymap_entry ' + sys.argv[1] + '[][64] = {')
+
+for k in namemap.keys():
+    print('\t[', namemap[k], '] = {', sep='')
     for i in range(64):
-        print('\t\t{', ', '.join(keysym(x[k], i)), '},', sep='')
+        print('\t\t{.type=', ', .val={'.join(keysym(x[k], i)), '}},', sep='')
     print('\t},')
-    #print(',\n\t\t'.join((', '.join(keysym(x[k], i)) for i in range(64))), '\n\t},', sep='')
 
 print('};')
