@@ -1,7 +1,9 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
+from __future__ import print_function, unicode_literals
 import sys
 import json
+import subprocess
 
 if len(sys.argv) >= 2:
     x = json.load(open(sys.argv[1]))
@@ -9,10 +11,34 @@ else:
     x = json.load(sys.stdin)
 
 othermap=[7,9,15,18,23,27,31,36,39,45,47,54,55,56,57,58,59,60,61,62,63]
-others=["_Backspace", "_Up", "_Back", "_Shift", "_Left", "_PageUp", "_Escape",
-        "_Down", "_Home", "_Symbols", "_Ctrl", "_PageDown", "_Alt", "_Space",
-        "_Forward", "_Right", "_Return", "_End", "_Tab", "_Del", "_Numbers"]
+others=["_BackSpace", "_Up", "*Left", "+Shift", "_Left", "_Prior", "_Escape",
+        "_Down", "_Home", "/SYMBOLS", "+Ctrl", "_Next", "+Alt", "_space",
+        "*Right", "_Right", "_Return", "_End", "_Tab", "_Delete", "/NUMBERS"]
 
+#syms = {
+#        '' : 'XK_VoidSymbol',
+#        '_': 'XK_underscore',
+#        ',': 'XK_comma',
+#        "'": 'XK_apostrophe',
+#        '!': 'XK_exclam',
+#        '-': 'XK_minus',
+#        '/': 'XK_slash',
+#        '?': 'XK_question',
+#        '.': 'XK_period',
+#        '\\':'XK_backslash',
+#        '(': 'XK_parenleft',
+#        ')': 'XK_parenright',
+#        '*': 'XK_asterisk',
+#        '%': 'XK_percent',
+#        '|': 'XK_bar',
+#        '[': 'XK_bracketleft',
+#        ']': 'XK_bracketright',
+#        '$': 'XK_dollar',
+#        '=': 'XK_equal',
+#        ';': 'XK_semicolon',
+#        '<': 'XK_less',
+#        '>': 'XK_greater',
+#}
 
 primap=[1,2,4,8,16,32,
         3,6,24,48,
@@ -44,16 +70,38 @@ def mapval(d, i):
         pass
     return ''
 
+def keysym(d, i):
+    orig = mapval(d, i)
+    if orig == '':
+        return 'NONE', 'NoSymbol'
+#    try:
+#        return 'PRESS', syms[orig]
+#    except KeyError:
+#        pass
+    if len(orig) == 1:
+        return 'PRESS', subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]])
+    if len(orig) == 1 and 'a' <= orig <= 'z':
+        return 'PRESS', 'XK_' + orig
+    if orig[0] == '_':
+        return 'PRESS', 'XK' + orig
+    if orig[0] == '+':
+        return 'MOD', 'XK_' + orig[1:] + '_L'
+    if orig[0] == '/':
+        return 'MAP', orig[1:]
+    return 'NONE', 'NoSymbol'
+    #return 'MACRO', '"' + orig + '"'
+
 def cstring(s):
     return '"' + s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
 
-print('struct keymap map = {')
+print('union keymap map[][64] = {')
 
-for k in ['lowercase','uppercase','capslock','numbers','symbols']:
-    print('\t.', end='')
-    print(k, '=', '{', end='')
-    print(', '.join((cstring(mapval(x[k], i)) for i in range(64))), '},', sep='')
+#for k in ['lowercase','uppercase','capslock','numbers','symbols']:
+for k in ['lowercase','numbers','symbols']:
+    print('\t[', k.upper(), '] = {', sep='')
+    for i in range(64):
+        print('\t\t{', ', '.join(keysym(x[k], i)), '},', sep='')
+    print('\t},')
+    #print(',\n\t\t'.join((', '.join(keysym(x[k], i)) for i in range(64))), '\n\t},', sep='')
 
 print('};')
-
-#print(y)
