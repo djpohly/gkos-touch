@@ -319,6 +319,17 @@ uint8_t get_pressed_bits(struct kbd_state *state)
 	return bits;
 }
 
+void highlight_win(struct kbd_state *state, Window win, int on)
+{
+	XWindowAttributes attrs;
+	XGetWindowAttributes(state->dpy, win, &attrs);
+
+	XSetForeground(state->dpy, state->gc,
+			on ? PRESSED_COLOR : UNPRESSED_COLOR);
+	XFillRectangle(state->dpy, win, state->gc, 0, 0,
+			attrs.width, attrs.height);
+}
+
 /*
  * Remember a window as "touched" at the start of a touch event
  */
@@ -338,12 +349,7 @@ int add_touch(struct kbd_state *state, Window win)
 		return 1;
 	}
 
-	XWindowAttributes attrs;
-	XGetWindowAttributes(state->dpy, win, &attrs);
-
-	XSetForeground(state->dpy, state->gc, PRESSED_COLOR);
-	XFillRectangle(state->dpy, win, state->gc, 0, 0,
-			attrs.width, attrs.height);
+	highlight_win(state, win, 1);
 
 	state->touches[i] = lwin;
 	return 0;
@@ -363,12 +369,7 @@ int remove_touch(struct kbd_state *state, Window win)
 		return 1;
 	}
 
-	XWindowAttributes attrs;
-	XGetWindowAttributes(state->dpy, win, &attrs);
-
-	XSetForeground(state->dpy, state->gc, UNPRESSED_COLOR);
-	XFillRectangle(state->dpy, win, state->gc, 0, 0,
-			attrs.width, attrs.height);
+	highlight_win(state, win, 0);
 
 	state->touches[i] = NULL;
 	return 0;
