@@ -156,6 +156,9 @@ done:
 	return 0;
 }
 
+/*
+ * Clean up resources allocated for touch device
+ */
 void destroy_touch_device(struct kbd_state *state)
 {
 	free(state->touches);
@@ -295,6 +298,9 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	return 0;
 }
 
+/*
+ * Tear down keyboard windows
+ */
 void destroy_windows(struct kbd_state *state)
 {
 	int i;
@@ -319,6 +325,9 @@ uint8_t get_pressed_bits(struct kbd_state *state)
 	return bits;
 }
 
+/*
+ * Turn on/off a window's highlight
+ */
 void highlight_win(struct kbd_state *state, Window win, int on)
 {
 	XWindowAttributes attrs;
@@ -386,6 +395,9 @@ int remove_touch(struct kbd_state *state, Window win)
 	return 0;
 }
 
+/*
+ * Event handling for XInput generic events
+ */
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 {
 	switch (ev->evtype) {
