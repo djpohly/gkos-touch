@@ -12,7 +12,7 @@ else:
 
 othermap=[7,9,15,18,23,27,31,36,39,45,47,54,55,56,57,58,59,60,61,62,63]
 others=["_BackSpace", "_Up", "*Left", "+Shift", "_Left", "_Prior", "_Escape",
-        "_Down", "_Home", "/SYMBOLS", "+Ctrl", "_Next", "+Alt", "_space",
+        "_Down", "_Home", "/SYMBOLS", "+Control", "_Next", "+Alt", "_space",
         "*Right", "_Right", "_Return", "_End", "_Tab", "_Delete", "/NUMBERS"]
 
 #syms = {
