@@ -89,9 +89,6 @@ def keysym(d, i):
     return 'NONE', '.sym = NoSymbol'
     #return 'MACRO', '"' + orig + '"'
 
-def cstring(s):
-    return '"' + s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
-
 namemap={
         'lowercase': 'LETTERS',
         'numbers': 'NUMBERS',
