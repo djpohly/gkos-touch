@@ -7,4 +7,4 @@ all: $(BINS)
 clean:
 	$(RM) $(BINS)
 
-gkos: -lX11 -lXi -lfakekey
+gkos: -lX11 -lXi
