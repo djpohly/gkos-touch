@@ -15,6 +15,42 @@
 #define UNPRESSED_COLOR 0xd0204a87
 #define BORDER_COLOR 0xffeeeeec
 
+/*
+ * 1 2 4 8 16 32
+ * 3 6 24 48
+ * 5 40
+ * 11 19 35
+ * 14 22 38
+ * 25 26 28
+ * 49 50 52
+ * 13 29 21 53 37
+ * 41 43 42 46 44
+ *
+ * 17 34 12 10 20 33 30 51
+ *
+ * 7  - BS
+ * 9  - Up
+ * 15 - Ctrl-Left (back one word)
+ * 18 - Shift (lowercase->uppercase->capslock->lowercase)
+ * 23 - Left
+ * 27 - PgUp
+ * 31 - Esc
+ * 36 - Down
+ * 39 - Home
+ * 45 - Symbols (lowercase->symbols->lowercase)
+ * 47 - Ctrl
+ * 54 - PgDn
+ * 55 - Alt
+ * 56 - Space
+ * 57 - Ctrl-Right (forward one word)
+ * 58 - Right
+ * 59 - Return
+ * 60 - End
+ * 61 - Tab
+ * 62 - Del
+ * 63 - Numbers (lowercase->numbers->lowercase)
+ */
+
 
 /*
  * Represents one button in a given layout
