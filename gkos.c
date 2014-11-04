@@ -331,6 +331,19 @@ void highlight_win(struct kbd_state *state, Window win, int on)
 }
 
 /*
+ * Highlight windows according to what is currently pressed
+ */
+void update_display(struct kbd_state *state)
+{
+	uint8_t bits = get_pressed_bits(state);
+	int i;
+	for (i = 0; i < state->nwins; i++) {
+		int on = (bits & state->wins[i].bits) == state->wins[i].bits;
+		highlight_win(state, state->wins[i].win, on);
+	}
+}
+
+/*
  * Remember a window as "touched" at the start of a touch event
  */
 int add_touch(struct kbd_state *state, Window win)
@@ -349,9 +362,8 @@ int add_touch(struct kbd_state *state, Window win)
 		return 1;
 	}
 
-	highlight_win(state, win, 1);
-
 	state->touches[i] = lwin;
+	update_display(state);
 	return 0;
 }
 
@@ -369,9 +381,8 @@ int remove_touch(struct kbd_state *state, Window win)
 		return 1;
 	}
 
-	highlight_win(state, win, 0);
-
 	state->touches[i] = NULL;
+	update_display(state);
 	return 0;
 }
 
