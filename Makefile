@@ -1,12 +1,16 @@
 BINS = gkos symname
+OBJS = gkos.o chorder.o
 
 CFLAGS = -Wall -Wextra -Werror -Wno-error=unused-parameter
 
 all: $(BINS)
 
 clean:
-	$(RM) $(BINS)
+	$(RM) $(BINS) $(OBJS)
 
-gkos: gkos.h -lX11 -lXi
+gkos: gkos.o chorder.o -lX11 -lXi
+
+gkos.o: gkos.h
+chorder.o: chorder.h
 
 symname: -lX11
