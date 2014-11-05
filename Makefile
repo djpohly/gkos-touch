@@ -1,7 +1,7 @@
 BINS = gkos symname
 OBJS = gkos.o chorder.o
 
-CFLAGS = -Wall -Wextra -Werror -Wno-error=unused-parameter
+CFLAGS = -Wall -Wextra -Werror -Wno-error=unused-parameter -Wno-error=unused-function
 
 all: $(BINS)
 
