@@ -20,8 +20,11 @@ struct chordentry {
 };
 
 struct chorder {
-	struct chordentry **map;
-	int maps, entries_per_map;
+	// Entries defining the keymap
+	struct chord_entry **entries;
+	// Number of keymaps and entries per map
+	unsigned long maps;
+	unsigned long entries_per_map;
 };
 
 int chorder_init(struct chorder *kbd, struct chordentry **map, int maps,
