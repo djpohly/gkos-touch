@@ -4,7 +4,10 @@
 
 #include "chorder.h"
 
-int chorder_init(struct chorder *kbd, struct chordentry **entries, int maps,
+/*
+ * Initializes a chorder
+ */
+int chorder_init(struct chorder *kbd, struct chord_entry **entries, int maps,
 		int entries_per_map)
 {
 	int i;
@@ -25,6 +28,9 @@ int chorder_init(struct chorder *kbd, struct chordentry **entries, int maps,
 	return 0;
 }
 
+/*
+ * Releases the resources allocated for a chorder
+ */
 void chorder_destroy(struct chorder *kbd)
 {
 	/* XXX Release keys */
