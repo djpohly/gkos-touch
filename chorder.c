@@ -67,17 +67,17 @@ static int removemod(struct mod_stack **mods, unsigned long code)
 /*
  * Initializes a chorder
  */
-int chorder_init(struct chorder *kbd, struct chord_entry **entries, int maps,
-		int entries_per_map, chorder_handler_t press, void *arg)
+int chorder_init(struct chorder *kbd, struct chord_entry **entries,
+		unsigned long maps, unsigned long entries_per_map,
+		chorder_handler_t press, void *arg)
 {
-	int i;
-
 	kbd->entries = malloc(maps * entries_per_map * sizeof(**entries));
 	if (!kbd->entries) {
 		perror("malloc");
 		return 1;
 	}
 
+	unsigned long i;
 	for (i = 0; i < maps; i++)
 		memcpy(kbd->entries + i * entries_per_map, entries + i,
 				entries_per_map * sizeof(**entries));
