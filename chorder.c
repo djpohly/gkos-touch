@@ -37,7 +37,7 @@ static unsigned long popmod(struct mod_stack **mods)
 /*
  * Determines whether a modifier is on a mod stack
  */
-static int hasmod(struct mod_stack *mods, unsigned long code)
+static int hasmod(const struct mod_stack *mods, unsigned long code)
 {
 	for (/* mods */; mods; mods = mods->next)
 		if (mods->code == code)
@@ -67,7 +67,7 @@ static int removemod(struct mod_stack **mods, unsigned long code)
 /*
  * Initializes a chorder
  */
-int chorder_init(struct chorder *kbd, struct chord_entry **entries,
+int chorder_init(struct chorder *kbd, const struct chord_entry **entries,
 		unsigned long maps, unsigned long entries_per_map,
 		chorder_handler_t press, void *arg)
 {
@@ -119,7 +119,7 @@ void chorder_destroy(struct chorder *kbd)
 /*
  * Gets the given entry from a chorder
  */
-struct chord_entry *chorder_get_entry(struct chorder *kbd,
+struct chord_entry *chorder_get_entry(const struct chorder *kbd,
 		unsigned long map, unsigned long entry)
 {
 	// Bounds checking
