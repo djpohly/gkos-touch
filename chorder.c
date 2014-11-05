@@ -99,7 +99,20 @@ int chorder_init(struct chorder *kbd, struct chord_entry **entries,
  */
 void chorder_destroy(struct chorder *kbd)
 {
-	/* XXX Release keys */
+	// Release any pressed mods
+	unsigned long code = popmod(&kbd->mods);
+	while (code) {
+		kbd->press(kbd->arg, code, 0);
+		code = popmod(&kbd->mods);
+	}
+
+	// Release any locked mods
+	code = popmod(&kbd->lockmods);
+	while (code) {
+		kbd->press(kbd->arg, code, 0);
+		code = popmod(&kbd->lockmods);
+	}
+	
 	free(kbd->entries);
 }
 
@@ -121,6 +134,8 @@ struct chord_entry *chorder_get_entry(struct chorder *kbd,
  */
 int chorder_press(struct chorder *kbd, unsigned long entry)
 {
+	int rv;
+
 	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
 	switch (e->type) {
 		case TYPE_NONE:
@@ -129,13 +144,50 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 		case TYPE_KEY:
 			// Until there's a nice way to handle it, holding
 			// regular keys is not supported
-			kbd->press(kbd->arg, e->val, 1);
-			kbd->press(kbd->arg, e->val, 0);
+			rv = kbd->press(kbd->arg, e->val, 1);
+			if (rv)
+				return rv;
+
+			rv = kbd->press(kbd->arg, e->val, 0);
+			if (rv)
+				return rv;
+
+			// Release any pressed mods
+			unsigned long code = popmod(&kbd->mods);
+			while (code) {
+				rv = kbd->press(kbd->arg, code, 0);
+				if (rv)
+					return rv;
+				code = popmod(&kbd->mods);
+			}
+
 			//if (!kbd->maplock)
 			//	kbd->current_map = 0;
 			break;
 		case TYPE_MOD:
-			fprintf(stderr, "mod not implemented\n");
+			// If the mod is locked, unpress it
+			if (!removemod(&kbd->lockmods, e->val)) {
+				rv = kbd->press(kbd->arg, e->val, 0);
+				if (rv)
+					return rv;
+				break;
+			}
+
+			// Otherwise, if it's pressed, lock it down
+			if (!removemod(&kbd->mods, e->val)) {
+				rv = pushmod(&kbd->lockmods, e->val);
+				if (rv)
+					return rv;
+				break;
+			}
+
+			// Otherwise it's not pressed, so press it
+			rv = pushmod(&kbd->mods, e->val);
+			if (rv)
+				return rv;
+			rv = kbd->press(kbd->arg, e->val, 1);
+			if (rv)
+				return rv;
 			break;
 		case TYPE_MAP:
 			fprintf(stderr, "map not implemented\n");
