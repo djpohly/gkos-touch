@@ -7,10 +7,18 @@ import subprocess
 
 x = json.load(sys.stdin)
 
+namemap={
+        'lowercase': 'MAP_DEFAULT',
+        'numbers': 'MAP_NUMBERS',
+        'symbols': 'MAP_SYMBOLS',
+}
+
+namemap_order = ['lowercase', 'numbers', 'symbols']
+
 othermap=[7,9,15,18,23,27,31,36,39,45,47,54,55,56,57,58,59,60,61,62,63]
 others=["_BackSpace", "_Up", "*Left", "+Shift", "_Left", "_Prior", "_Escape",
-        "_Down", "_Home", "/SYMBOLS", "+Control", "_Next", "+Alt", "_space",
-        "*Right", "_Right", "_Return", "_End", "_Tab", "_Delete", "/NUMBERS"]
+        "_Down", "_Home", "/symbols", "+Control", "_Next", "+Alt", "_space",
+        "*Right", "_Right", "_Return", "_End", "_Tab", "_Delete", "/numbers"]
 
 #syms = {
 #        '' : 'XK_VoidSymbol',
@@ -69,38 +77,37 @@ def mapval(d, i):
 
 def keysym(d, i):
     orig = mapval(d, i)
-    if orig == '':
-        return 'NONE', '.sym = NoSymbol'
+    if orig == '' or orig == '€':
+        return 'NONE', 'NoSymbol'
 #    try:
-#        return 'PRESS', syms[orig]
+#        return 'KEY', syms[orig]
 #    except KeyError:
 #        pass
     if len(orig) == 1:
-        return 'PRESS', ('.sym = ' +
-            subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]]))
+        return 'KEY', subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]])
     if orig == '_Ins':
-        return 'PRESS', '.sym = XK_Insert'
+        return 'KEY', 'XK_Insert'
     if orig[0] == '_':
-        return 'PRESS', '.sym = XK' + orig
+        return 'KEY', 'XK' + orig
     if orig[0] == '+':
-        return 'MOD', '.sym = XK_' + orig[1:] + '_L'
+        return 'MOD', 'XK_' + orig[1:] + '_L'
     if orig[0] == '/':
-        return 'MAP', '.map = ' + orig[1:]
-    return 'NONE', '.sym = NoSymbol'
+        return 'MAP', namemap[orig[1:]]
+    return 'NONE', 'NoSymbol'
     #return 'MACRO', '"' + orig + '"'
 
-namemap={
-        'lowercase': 'LETTERS',
-        'numbers': 'NUMBERS',
-        'symbols': 'SYMBOLS',
-}
+print('enum chordmap {')
+for k in namemap_order:
+    print('\t' + namemap[k] + ',')
+print('};')
+print()
 
-print('struct keymap_entry ' + sys.argv[1] + '[][64] = {')
+print('struct chord_entry map[][64] = {')
 
-for k in namemap.keys():
+for k in namemap_order:
     print('\t[', namemap[k], '] = {', sep='')
     for i in range(64):
-        print('\t\t{.type=', ', .val={'.join(keysym(x[k], i)), '}},', sep='')
+        print('\t\t{.type=TYPE_', ', .val='.join(keysym(x[k], i)), '},', sep='')
     print('\t},')
 
 print('};')
