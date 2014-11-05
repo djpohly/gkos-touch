@@ -86,6 +86,7 @@ int chorder_init(struct chorder *kbd, struct chord_entry **entries,
 	kbd->entries_per_map = entries_per_map;
 	kbd->current_map = 0;
 	kbd->mods = NULL;
+	kbd->lockmods = NULL;
 	kbd->press = press;
 	kbd->arg = arg;
 	kbd->maplock = 0;
