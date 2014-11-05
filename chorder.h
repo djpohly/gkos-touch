@@ -3,6 +3,8 @@
 
 #include <X11/Xlib.h>
 
+typedef int (*chorder_handler_t)(void *arg, unsigned long code, int press);
+
 // Types of actions that can be assigned to a chord
 enum chord_type {
 	// Unassigned
@@ -25,16 +27,37 @@ struct chord_entry {
 	unsigned long val;
 };
 
+// Stack data structure for mod keys
+struct mod_stack {
+	unsigned long code;
+	struct mod_stack *next;
+};
+
 struct chorder {
 	// Entries defining the keymap
 	struct chord_entry **entries;
 	// Number of keymaps and entries per map
 	unsigned long maps;
 	unsigned long entries_per_map;
+
+	// Currently selected keymap
+	unsigned long current_map;
+
+	// Mods currently pressed and/or locked
+	struct mod_stack *mods;
+	struct mod_stack *lockmods;
+
+	// Function to call when a key is pressed
+	chorder_handler_t press;
+	// Opaque pointer passed to the press handler
+	void *arg;
+
+	// Flags
+	unsigned int maplock : 1;
 };
 
 int chorder_init(struct chorder *kbd, struct chord_entry **map, int maps,
-		int entries_per_map);
+		int entries_per_map, chorder_handler_t handle, void *arg);
 void chorder_destroy(struct chorder *kbd);
 
 #endif

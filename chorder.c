@@ -8,7 +8,7 @@
  * Initializes a chorder
  */
 int chorder_init(struct chorder *kbd, struct chord_entry **entries, int maps,
-		int entries_per_map)
+		int entries_per_map, chorder_handler_t press, void *arg)
 {
 	int i;
 
@@ -24,6 +24,11 @@ int chorder_init(struct chorder *kbd, struct chord_entry **entries, int maps,
 
 	kbd->maps = maps;
 	kbd->entries_per_map = entries_per_map;
+	kbd->current_map = 0;
+	kbd->mods = NULL;
+	kbd->press = press;
+	kbd->arg = arg;
+	kbd->maplock = 0;
 
 	return 0;
 }
