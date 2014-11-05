@@ -35,7 +35,7 @@ struct mod_stack {
 
 struct chorder {
 	// Entries defining the keymap
-	struct chord_entry **entries;
+	struct chord_entry *entries;
 	// Number of keymaps and entries per map
 	unsigned long maps;
 	unsigned long entries_per_map;
