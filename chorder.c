@@ -101,3 +101,54 @@ void chorder_destroy(struct chorder *kbd)
 	/* XXX Release keys */
 	free(kbd->entries);
 }
+
+/*
+ * Gets the given entry from a chorder
+ */
+struct chord_entry *chorder_get_entry(struct chorder *kbd,
+		unsigned long map, unsigned long entry)
+{
+	// Bounds checking
+	if (map >= kbd->maps || entry >= kbd->entries_per_map)
+		return NULL;
+
+	return kbd->entries + map * kbd->entries_per_map + entry;
+}
+
+/*
+ * Handles a chord press on a chorder
+ */
+int chorder_press(struct chorder *kbd, unsigned long entry)
+{
+	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
+	switch (e->type) {
+		case TYPE_NONE:
+			fprintf(stderr, "not mapped\n");
+			break;
+		case TYPE_KEY:
+			// Until there's a nice way to handle it, holding
+			// regular keys is not supported
+			kbd->press(kbd->arg, e->val, 1);
+			kbd->press(kbd->arg, e->val, 0);
+			//if (!kbd->maplock)
+			//	kbd->current_map = 0;
+			break;
+		case TYPE_MOD:
+			fprintf(stderr, "mod not implemented\n");
+			break;
+		case TYPE_MAP:
+			fprintf(stderr, "map not implemented\n");
+			//kbd->current_map = e->val;
+			//kbd->maplock = 0;
+			break;
+		case TYPE_LOCK:
+			fprintf(stderr, "lock not implemented\n");
+			//kbd->current_map = e->val;
+			//kbd->maplock = 1;
+			break;
+		case TYPE_MACRO:
+			fprintf(stderr, "macro not implemented\n");
+			break;
+	}
+	return 0;
+}

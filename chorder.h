@@ -61,4 +61,9 @@ int chorder_init(struct chorder *kbd, struct chord_entry **map,
 		chorder_handler_t handle, void *arg);
 void chorder_destroy(struct chorder *kbd);
 
+struct chord_entry *chorder_get_entry(struct chorder *kbd,
+		unsigned long map, unsigned long entry);
+
+int chorder_press(struct chorder *kbd, unsigned long entry);
+
 #endif
