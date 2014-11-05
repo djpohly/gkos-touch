@@ -3,10 +3,9 @@
 
 #include "chorder.h"
 
-int mypress(void *unused, unsigned long code, int press)
+void mypress(void *unused, unsigned long code, int press)
 {
 	printf("%c %s\n", (char) code, press ? "pressed" : "released");
-	return 0;
 }
 
 int main()

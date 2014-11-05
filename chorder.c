@@ -144,20 +144,13 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 		case TYPE_KEY:
 			// Until there's a nice way to handle it, holding
 			// regular keys is not supported
-			rv = kbd->press(kbd->arg, e->val, 1);
-			if (rv)
-				return rv;
-
-			rv = kbd->press(kbd->arg, e->val, 0);
-			if (rv)
-				return rv;
+			kbd->press(kbd->arg, e->val, 1);
+			kbd->press(kbd->arg, e->val, 0);
 
 			// Release any pressed mods
 			unsigned long code = popmod(&kbd->mods);
 			while (code) {
-				rv = kbd->press(kbd->arg, code, 0);
-				if (rv)
-					return rv;
+				kbd->press(kbd->arg, code, 0);
 				code = popmod(&kbd->mods);
 			}
 
@@ -167,9 +160,7 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 		case TYPE_MOD:
 			// If the mod is locked, unpress it
 			if (!removemod(&kbd->lockmods, e->val)) {
-				rv = kbd->press(kbd->arg, e->val, 0);
-				if (rv)
-					return rv;
+				kbd->press(kbd->arg, e->val, 0);
 				break;
 			}
 
@@ -185,9 +176,7 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 			rv = pushmod(&kbd->mods, e->val);
 			if (rv)
 				return rv;
-			rv = kbd->press(kbd->arg, e->val, 1);
-			if (rv)
-				return rv;
+			kbd->press(kbd->arg, e->val, 1);
 			break;
 		case TYPE_MAP:
 			fprintf(stderr, "map not implemented\n");

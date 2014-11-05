@@ -3,7 +3,7 @@
 
 #include <X11/Xlib.h>
 
-typedef int (*chorder_handler_t)(void *arg, unsigned long code, int press);
+typedef void (*chorder_handler_t)(void *arg, unsigned long code, int press);
 
 // Types of actions that can be assigned to a chord
 enum chord_type {
