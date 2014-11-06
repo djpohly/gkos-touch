@@ -5,6 +5,7 @@
 
 void mypress(void *unused, unsigned long code, int press)
 {
+	(void) unused;
 	printf("%c %s\n", (char) code, press ? "pressed" : "released");
 }
 
