@@ -151,8 +151,9 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 				code = popmod(&kbd->mods);
 			}
 
-			//if (!kbd->maplock)
-			//	kbd->current_map = 0;
+			// Switch back to default map if not locked
+			if (!kbd->maplock)
+				kbd->current_map = 0;
 			break;
 		case TYPE_MOD:
 			// If the mod is locked, unpress it
@@ -174,16 +175,47 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 			if (rv)
 				return rv;
 			kbd->press(kbd->arg, e->val, 1);
+
+			// Switch back to default map if not locked
+			if (!kbd->maplock)
+				kbd->current_map = 0;
+			break;
+		case TYPE_MODLOCK:
+			// Straight to locked mod
+
+			// If already locked, toggle it off
+			if (!removemod(&kbd->lockmods, e->val)) {
+				kbd->press(kbd->arg, e->val, 0);
+				break;
+			}
+
+			// Otherwise it's not pressed, so press it
+			rv = pushmod(&kbd->lockmods, e->val);
+			if (rv)
+				return rv;
+			kbd->press(kbd->arg, e->val, 1);
 			break;
 		case TYPE_MAP:
-			fprintf(stderr, "map not implemented\n");
-			//kbd->current_map = e->val;
-			//kbd->maplock = 0;
+			if (kbd->current_map == e->val) {
+				// If we're already on this map...
+				if (kbd->maplock) {
+					// and it's locked, release
+					kbd->current_map = 0;
+					kbd->maplock = 0;
+				} else {
+					// and it's not locked, lock it
+					kbd->maplock = 1;
+				}
+			} else {
+				// Otherwise, switch to the map
+				kbd->current_map = e->val;
+				kbd->maplock = 0;
+			}
 			break;
-		case TYPE_LOCK:
-			fprintf(stderr, "lock not implemented\n");
-			//kbd->current_map = e->val;
-			//kbd->maplock = 1;
+		case TYPE_MAPLOCK:
+			// Straight to locked map
+			kbd->current_map = e->val;
+			kbd->maplock = 1;
 			break;
 		case TYPE_MACRO:
 			fprintf(stderr, "macro not implemented\n");

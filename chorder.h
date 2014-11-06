@@ -11,12 +11,14 @@ enum chord_type {
 	TYPE_NONE,
 	// Presses a key
 	TYPE_KEY,
-	// Presses a key and holds it until after the next CHORD_KEY
+	// Presses a modifier and holds it until after the next CHORD_KEY
 	TYPE_MOD,
-	// Selects the keymap which will be used for the next chord
+	// Presses a modifier and holds it until pressed again
+	TYPE_MODLOCK,
+	// Selects the keymap to use for the next chord
 	TYPE_MAP,
-	// Selects the keymap which will be used until lock is released
-	TYPE_LOCK,
+	// Selects the keymap to use until another is explicitly selected
+	TYPE_MAPLOCK,
 	// Executes a sequence of chords
 	TYPE_MACRO,
 };

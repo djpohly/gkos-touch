@@ -12,23 +12,30 @@ void mypress(void *unused, unsigned long code, int press)
 int main()
 {
 	int rv;
-	struct chord_entry map[1][26];
+	struct chord_entry map[2][27];
 	int i;
 	map[0][0] = (struct chord_entry) {.type = TYPE_NONE, .val = 0};
+	map[0][26] = (struct chord_entry) {.type = TYPE_MAPLOCK, .val = 1};
 	for (i = 1; i < 26; i++)
-		map[0][i] = (struct chord_entry) {.type = TYPE_KEY, .val = '@' + i};
-	map[0][4].type = TYPE_MOD;
+		map[0][i] = (struct chord_entry) {.type = TYPE_KEY, .val = '`' + i};
 	map[0][5].type = TYPE_MOD;
 
+	map[1][0] = (struct chord_entry) {.type = TYPE_MAP, .val = 0};
+	for (i = 1; i < 26; i++)
+		map[1][i] = (struct chord_entry) {.type = TYPE_KEY, .val = '@' + i};
+	map[1][5].type = TYPE_MODLOCK;
+	map[1][26] = (struct chord_entry) {.type = TYPE_MAP, .val = 1};
+
 	struct chorder kbd;
-	rv = chorder_init(&kbd, &map[0][0], 1, 26, mypress, NULL);
+	rv = chorder_init(&kbd, &map[0][0], 2, 27, mypress, NULL);
 	assert(!rv);
-	rv = chorder_press(&kbd, 4);
-	rv = chorder_press(&kbd, 5);
-	rv = chorder_press(&kbd, 5);
-	rv = chorder_press(&kbd, 22);
-	rv = chorder_press(&kbd, 9);
-	rv = chorder_press(&kbd, 14);
+	chorder_press(&kbd, 26);
+	chorder_press(&kbd, 4);
+	chorder_press(&kbd, 5);
+	chorder_press(&kbd, 22);
+	chorder_press(&kbd, 26);
+	chorder_press(&kbd, 9);
+	chorder_press(&kbd, 14);
 	chorder_destroy(&kbd);
 	return 0;
 }
