@@ -35,17 +35,6 @@ static unsigned long popmod(struct mod_stack **mods)
 }
 
 /*
- * Determines whether a modifier is on a mod stack
- */
-static int hasmod(const struct mod_stack *mods, unsigned long code)
-{
-	for (/* mods */; mods; mods = mods->next)
-		if (mods->code == code)
-			return 1;
-	return 0;
-}
-
-/*
  * Removes the given modifier from a mod stack, returning 0 if successful and
  * nonzero otherwise
  */
