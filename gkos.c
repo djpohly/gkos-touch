@@ -437,9 +437,9 @@ int main(int argc, char **argv)
 	}
 
 	// Ensure we have XInput...
-	int xi_event, xi_error;
+	int event, error;
 	if (!XQueryExtension(state.dpy, "XInputExtension", &state.xi_opcode,
-				&xi_event, &xi_error)) {
+				&event, &error)) {
 		ret = 1;
 		fprintf(stderr, "Server does not support XInput\n");
 		goto out_close;
@@ -454,7 +454,12 @@ int main(int argc, char **argv)
 		goto out_close;
 	}
 
-	// XXX Ensure we have XTest too
+	// XXX Ensure we have XTest
+	if (!XTestQueryExtension(state.dpy, &event, &error, &major, &minor)) {
+		ret = 1;
+		fprintf(stderr, "Server does not support XTest\n");
+		goto out_close;
+	}
 
 	// Get a specific device if given, otherwise find anything capable of
 	// direct-style touch input
