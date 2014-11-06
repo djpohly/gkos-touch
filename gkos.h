@@ -5,6 +5,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include "chorder.h"
+
 #define GRID_X 130
 #define GRID_Y 70
 #define TOP_Y 400
@@ -45,6 +47,7 @@ struct kbd_state {
 	int ntouches;
 	struct layout_win *wins;
 	struct layout_win **touches;
+	struct chorder chorder;
 	unsigned int active : 1;
 };
 

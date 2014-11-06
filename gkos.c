@@ -6,6 +6,8 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 
+#include "chorder.h"
+#include "english_optimized.h"
 #include "gkos.h"
 
 /*
@@ -333,6 +335,15 @@ int remove_touch(struct kbd_state *state, Window win)
 }
 
 /*
+ * Chorder press handler
+ */
+void handle_press(void *arg, unsigned long code, int press)
+{
+	(void) arg;
+	fprintf(stderr, "%lu %s\n", code, press ? "pressed" : "released");
+}
+
+/*
  * Event handling for XInput generic events
  */
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
@@ -352,7 +363,8 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 			if (!ev->child || ev->child == state->win)
 				break;
 			if (state->active) {
-				fprintf(stderr, "bits %u\n", get_pressed_bits(state));
+				chorder_press(&state->chorder,
+						get_pressed_bits(state));
 				state->active = 0;
 			}
 			if (remove_touch(state, ev->child))
@@ -405,11 +417,16 @@ int main(int argc, char **argv)
 	struct kbd_state state;
 	state.active = 0;
 
+	// Initialize chorder
+	chorder_init(&state.chorder, (const struct chord_entry *) map,
+			3, 64, handle_press, NULL);
+
 	// Open display
 	state.dpy = XOpenDisplay(NULL);
 	if (!state.dpy) {
+		ret = 1;
 		fprintf(stderr, "Could not open display\n");
-		return 1;
+		goto out_destroy_chorder;
 	}
 
 	// Ensure we have XInput...
@@ -472,5 +489,8 @@ out_destroy_touch:
 
 out_close:
 	XCloseDisplay(state.dpy);
+
+out_destroy_chorder:
+	chorder_destroy(&state.chorder);
 	return ret;
 }
