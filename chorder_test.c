@@ -20,8 +20,7 @@ int main()
 	map[0][5].type = TYPE_MOD;
 
 	struct chorder kbd;
-	rv = chorder_init(&kbd, (const struct chord_entry **) map, 1, 26,
-			mypress, NULL);
+	rv = chorder_init(&kbd, &map[0][0], 1, 26, mypress, NULL);
 	assert(!rv);
 	rv = chorder_press(&kbd, 4);
 	rv = chorder_press(&kbd, 5);

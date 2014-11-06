@@ -56,7 +56,7 @@ struct chorder {
 	unsigned int maplock : 1;
 };
 
-int chorder_init(struct chorder *kbd, const struct chord_entry **map,
+int chorder_init(struct chorder *kbd, const struct chord_entry *map,
 		unsigned long maps, unsigned long entries_per_map,
 		chorder_handler_t handle, void *arg);
 void chorder_destroy(struct chorder *kbd);
