@@ -5,6 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
+#include <X11/extensions/XTest.h>
 
 #include "chorder.h"
 #include "english_optimized.h"
@@ -337,10 +338,11 @@ int remove_touch(struct kbd_state *state, Window win)
 /*
  * Chorder press handler
  */
-void handle_press(void *arg, unsigned long code, int press)
+void handle_press(void *arg, unsigned long sym, int press)
 {
-	(void) arg;
-	fprintf(stderr, "%lu %s\n", code, press ? "pressed" : "released");
+	struct kbd_state *state = arg;
+	unsigned long code = XKeysymToKeycode(state->dpy, sym);
+	XTestFakeKeyEvent(state->dpy, code, press, CurrentTime);
 }
 
 /*
@@ -422,7 +424,7 @@ int main(int argc, char **argv)
 
 	// Initialize chorder
 	chorder_init(&state.chorder, (const struct chord_entry *) map,
-			3, 64, handle_press, NULL);
+			3, 64, handle_press, &state);
 
 	// Open display
 	state.dpy = XOpenDisplay(NULL);
@@ -449,6 +451,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Server does not support XInput 2.2\n");
 		goto out_close;
 	}
+
+	// XXX Ensure we have XTest too
 
 	// Get a specific device if given, otherwise find anything capable of
 	// direct-style touch input

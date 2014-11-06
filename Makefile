@@ -9,7 +9,7 @@ all: $(BINS)
 clean:
 	$(RM) $(BINS) $(OBJS)
 
-gkos: gkos.o chorder.o -lX11 -lXi
+gkos: gkos.o chorder.o -lX11 -lXi -lXtst
 gkos.o: gkos.h
 
 chorder_test: chorder_test.o chorder.o
