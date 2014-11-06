@@ -49,6 +49,7 @@ struct kbd_state {
 	struct layout_win **touches;
 	struct chorder chorder;
 	unsigned int active : 1;
+	unsigned int shutdown : 1;
 };
 
 

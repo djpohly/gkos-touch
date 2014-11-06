@@ -360,8 +360,10 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 			//fprintf(stderr, "touch update\n");
 			break;
 		case XI_TouchEnd:
-			if (!ev->child || ev->child == state->win)
+			if (!ev->child || ev->child == state->win) {
+				state->shutdown = 1;
 				break;
+			}
 			if (state->active) {
 				chorder_press(&state->chorder,
 						get_pressed_bits(state));
@@ -385,7 +387,7 @@ int event_loop(struct kbd_state *state)
 	XEvent ev;
 	XGenericEventCookie *cookie = &ev.xcookie;
 
-	while (XNextEvent(state->dpy, &ev) == Success) {
+	while (!state->shutdown && XNextEvent(state->dpy, &ev) == Success) {
 		if (ev.type == GenericEvent &&
 				cookie->extension == state->xi_opcode &&
 				XGetEventData(state->dpy, cookie)) {
@@ -416,6 +418,7 @@ int main(int argc, char **argv)
 
 	struct kbd_state state;
 	state.active = 0;
+	state.shutdown = 0;
 
 	// Initialize chorder
 	chorder_init(&state.chorder, (const struct chord_entry *) map,
