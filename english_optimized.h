@@ -1,5 +1,10 @@
+#ifndef ENGLISH_OPTIMIZED_H_
+#define ENGLISH_OPTIMIZED_H_
+
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+
+#include "chorder.h"
 
 enum chordmap {
 	MAP_DEFAULT,
@@ -207,3 +212,5 @@ struct chord_entry map[][64] = {
 		{.type=TYPE_MAP, .val=MAP_NUMBERS},
 	},
 };
+
+#endif
