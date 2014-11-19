@@ -107,7 +107,7 @@ void destroy_touch_device(struct kbd_state *state)
 /*
  * Establishes passive grabs for touch events on the given window
  */
-int grab_touches(struct kbd_state *state, Window win)
+int grab_touches(struct kbd_state *state)
 {
 	// Set up event mask for touch events
 	unsigned char mask[XIMaskLen(XI_LASTEVENT)];
@@ -122,26 +122,19 @@ int grab_touches(struct kbd_state *state, Window win)
 		.deviceid = state->input_dev,
 	};
 
-	// Set up modifier structure
-	XIGrabModifiers mods;
-	mods.modifiers = XIAnyModifier;
-
-	// Grab all the things
-	return XIGrabTouchBegin(state->dpy, state->input_dev, win,
-			XINoOwnerEvents, &em, 1, &mods);
+	// Grab the touch device
+	return XIGrabDevice(state->dpy, state->input_dev,
+			DefaultRootWindow(state->dpy), CurrentTime, None,
+			XIGrabModeAsync, XIGrabModeAsync, False, &em);
 }
 
 /*
  * Releases passive grabs for touch events
  */
-void ungrab_touches(struct kbd_state *state, Window win)
+void ungrab_touches(struct kbd_state *state)
 {
-	// Reconstruct modifier structure
-	XIGrabModifiers mods;
-	mods.modifiers = XIAnyModifier;
-
 	// Ungrab all the things
-	XIUngrabTouchBegin(state->dpy, state->input_dev, win, 1, &mods);
+	XIUngrabDevice(state->dpy, state->input_dev, CurrentTime);
 }
 
 /*
@@ -221,7 +214,7 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	}
 
 	// Grab touch events for the new window
-	if (grab_touches(state, state->win)) {
+	if (grab_touches(state)) {
 		fprintf(stderr, "Failed to grab touch event\n");
 		return 1;
 	}
@@ -248,7 +241,7 @@ void destroy_windows(struct kbd_state *state)
 		XDestroyWindow(state->dpy, state->wins[i].win);
 	free(state->wins);
 
-	ungrab_touches(state, state->win);
+	ungrab_touches(state);
 	XDestroyWindow(state->dpy, state->win);
 }
 
