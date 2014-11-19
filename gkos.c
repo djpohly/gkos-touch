@@ -345,12 +345,12 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 {
 	switch (ev->evtype) {
 		case XI_TouchBegin:
+			XIAllowTouchEvents(state->dpy, state->input_dev,
+					ev->detail, ev->event, XIAcceptTouch);
 			if (!ev->child || ev->child == state->win)
 				break;
 			if (add_touch(state, ev->child))
 				return 1;
-			XIAllowTouchEvents(state->dpy, state->input_dev,
-					ev->detail, ev->event, XIAcceptTouch);
 			state->active = 1;
 			break;
 		case XI_TouchUpdate:
