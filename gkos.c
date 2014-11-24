@@ -219,6 +219,11 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 		return 1;
 	}
 
+	return 0;
+}
+
+void map_windows(struct kbd_state *state)
+{
 	// Map everything and wait for the notify event
 	XMapSubwindows(state->dpy, state->win);
 	XMapWindow(state->dpy, state->win);
@@ -227,8 +232,6 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	while (XMaskEvent(state->dpy, StructureNotifyMask, &ev) == Success &&
 			(ev.type != MapNotify || ev.xmap.event != state->win))
 		;
-
-	return 0;
 }
 
 /*
@@ -472,7 +475,7 @@ int main(int argc, char **argv)
 	state.cmap = XCreateColormap(state.dpy, DefaultRootWindow(state.dpy),
 			state.xvi.visual, AllocNone);
 
-	// Create and map windows for keyboard
+	// Create windows for keyboard
 	ret = create_windows(&state, default_btns,
 			sizeof(default_btns) / sizeof(default_btns[0]));
 	if (ret) {
@@ -481,6 +484,8 @@ int main(int argc, char **argv)
 	}
 
 	state.gc = XCreateGC(state.dpy, state.win, 0, NULL);
+
+	map_windows(&state);
 
 	ret = event_loop(&state);
 
