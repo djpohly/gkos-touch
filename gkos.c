@@ -447,7 +447,7 @@ int main(int argc, char **argv)
 		goto out_close;
 	}
 
-	// XXX Ensure we have XTest
+	// Ensure we have XTest
 	if (!XTestQueryExtension(state.dpy, &event, &error, &major, &minor)) {
 		ret = 1;
 		fprintf(stderr, "Server does not support XTest\n");
