@@ -146,14 +146,19 @@ void ungrab_touches(struct kbd_state *state)
 }
 
 /*
- * Returns the button window structure corresponding to a given X Window
+ * Returns the button window structure, if any, at the given coordinates
  */
-struct layout_win *get_layout_win(struct kbd_state *state, Window win)
+struct layout_win *get_layout_win(struct kbd_state *state, double x, double y)
 {
 	int i;
-	for (i = 0; i < state->nwins; i++)
-		if (state->wins[i].win == win)
+	for (i = 0; i < state->nwins; i++) {
+		XWindowAttributes attrs;
+		XGetWindowAttributes(state->dpy, state->wins[i].win, &attrs);
+
+		if (x >= attrs.x && x <= attrs.x + attrs.width &&
+				y >= attrs.y && y <= attrs.y + attrs.height)
 			return &state->wins[i];
+	}
 	return NULL;
 }
 
@@ -299,9 +304,9 @@ void update_display(struct kbd_state *state)
 /*
  * Remember a window as "touched" at the start of a touch event
  */
-int add_touch(struct kbd_state *state, Window win)
+int add_touch(struct kbd_state *state, double x, double y, int touchid)
 {
-	struct layout_win *lwin = get_layout_win(state, win);
+	struct layout_win *lwin = get_layout_win(state, x, y);
 	if (!lwin) {
 		fprintf(stderr, "Couldn't get touched window\n");
 		return 1;
@@ -316,6 +321,7 @@ int add_touch(struct kbd_state *state, Window win)
 	}
 
 	state->touches[i] = lwin;
+	state->touchids[i] = touchid;
 	update_display(state);
 	return 0;
 }
@@ -323,11 +329,11 @@ int add_touch(struct kbd_state *state, Window win)
 /*
  * Unregister a touched window when the touch is released
  */
-int remove_touch(struct kbd_state *state, Window win)
+int remove_touch(struct kbd_state *state, int touchid)
 {
 	int i;
 	for (i = 0; i < state->ntouches; i++)
-		if (state->touches[i] && state->touches[i]->win == win)
+		if (state->touches[i] && state->touchids[i] == touchid)
 			break;
 	if (i >= state->ntouches) {
 		fprintf(stderr, "Released window was not touched\n");
@@ -335,6 +341,7 @@ int remove_touch(struct kbd_state *state, Window win)
 	}
 
 	state->touches[i] = NULL;
+	state->touchids[i] = 0;
 	update_display(state);
 	return 0;
 }
@@ -360,7 +367,7 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 					ev->detail, ev->event, XIAcceptTouch);
 			if (!ev->child || ev->child == state->win)
 				break;
-			if (add_touch(state, ev->child))
+			if (add_touch(state, ev->root_x, ev->root_y, ev->detail))
 				return 1;
 			state->active = 1;
 			break;
@@ -377,7 +384,7 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 						get_pressed_bits(state));
 				state->active = 0;
 			}
-			if (remove_touch(state, ev->child))
+			if (remove_touch(state, ev->detail))
 				return 1;
 			break;
 		default:
