@@ -93,6 +93,13 @@ done:
 		return 1;
 	}
 
+	state->touchids = calloc(state->ntouches, sizeof(state->touchids[0]));
+	if (!state->touchids) {
+		fprintf(stderr, "Failed to allocate touchids\n");
+		free(state->touches);
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -101,6 +108,7 @@ done:
  */
 void destroy_touch_device(struct kbd_state *state)
 {
+	free(state->touchids);
 	free(state->touches);
 }
 
