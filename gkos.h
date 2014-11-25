@@ -28,7 +28,6 @@ struct layout_btn {
  * Window corresponding to button
  */
 struct layout_win {
-	Window win;
 	int x, y;
 	unsigned int w, h;
 	uint8_t bits;

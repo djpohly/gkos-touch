@@ -216,12 +216,7 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 		int y = btns[i].y * GRID_Y + TOP_Y;
 		int h = btns[i].h * GRID_Y;
 
-		// Create subwindow
-		state->wins[i].win = XCreateWindow(state->dpy, state->win,
-				x, y, GRID_X-2, h-2, 1,
-				state->xvi.depth, InputOutput, state->xvi.visual,
-				CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap,
-				&attrs);
+		// Save geometry and info
 		state->wins[i].x = x;
 		state->wins[i].y = y;
 		state->wins[i].w = GRID_X;
@@ -255,9 +250,6 @@ void map_windows(struct kbd_state *state)
  */
 void destroy_windows(struct kbd_state *state)
 {
-	int i;
-	for (i = 0; i < state->nwins; i++)
-		XDestroyWindow(state->dpy, state->wins[i].win);
 	free(state->wins);
 
 	ungrab_touches(state);
@@ -280,15 +272,18 @@ uint8_t get_pressed_bits(struct kbd_state *state)
 /*
  * Turn on/off a window's highlight
  */
-void highlight_win(struct kbd_state *state, Window win, int on)
+void highlight_win(struct kbd_state *state, struct layout_win *win, int on)
 {
-	XWindowAttributes attrs;
-	XGetWindowAttributes(state->dpy, win, &attrs);
-
+	// Fill
 	XSetForeground(state->dpy, state->gc,
 			on ? PRESSED_COLOR : UNPRESSED_COLOR);
-	XFillRectangle(state->dpy, win, state->gc, 0, 0,
-			attrs.width, attrs.height);
+	XFillRectangle(state->dpy, state->win, state->gc,
+			win->x, win->y, win->w, win->h);
+
+	// Border
+	XSetForeground(state->dpy, state->gc, BORDER_COLOR);
+	XDrawRectangle(state->dpy, state->win, state->gc,
+			win->x, win->y, win->w, win->h);
 }
 
 /*
@@ -300,7 +295,7 @@ void update_display(struct kbd_state *state)
 	int i;
 	for (i = 0; i < state->nwins; i++) {
 		int on = (bits & state->wins[i].bits) == state->wins[i].bits;
-		highlight_win(state, state->wins[i].win, on);
+		highlight_win(state, &state->wins[i], on);
 	}
 }
 
@@ -526,6 +521,7 @@ int main(int argc, char **argv)
 	state.gc = XCreateGC(state.dpy, state.win, 0, NULL);
 
 	map_windows(&state);
+	update_display(&state);
 
 	ret = event_loop(&state);
 
