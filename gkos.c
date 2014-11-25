@@ -232,7 +232,6 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 void map_windows(struct kbd_state *state)
 {
 	// Map everything and wait for the notify event
-	XMapSubwindows(state->dpy, state->win);
 	XMapWindow(state->dpy, state->win);
 
 	XEvent ev;
