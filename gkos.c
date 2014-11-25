@@ -204,10 +204,6 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	// Free the class hint
 	XFree(class);
 
-	// Prepare attributes for subwindows
-	attrs.background_pixel = UNPRESSED_COLOR;
-	attrs.border_pixel = BORDER_COLOR;
-
 	for (i = 0; i < state->nwins; i++) {
 		// Calculate window position in grid
 		int x = btns[i].x * GRID_X;
