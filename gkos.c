@@ -272,7 +272,7 @@ uint8_t get_pressed_bits(struct kbd_state *state)
 	uint8_t bits = 0;
 	int i;
 	for (i = 0; i < state->ntouches; i++)
-		if (state->touches[i])
+		if (state->touchids[i] && state->touches[i])
 			bits |= state->touches[i]->bits;
 	return bits;
 }
@@ -316,7 +316,7 @@ int add_touch(struct kbd_state *state, double x, double y, int touchid)
 	}
 
 	int i;
-	for (i = 0; i < state->ntouches && state->touches[i]; i++)
+	for (i = 0; i < state->ntouches && state->touchids[i]; i++)
 		;
 	if (i >= state->ntouches) {
 		fprintf(stderr, "No open touch slots found\n");
@@ -336,7 +336,7 @@ int remove_touch(struct kbd_state *state, int touchid)
 {
 	int i;
 	for (i = 0; i < state->ntouches; i++)
-		if (state->touches[i] && state->touchids[i] == touchid)
+		if (state->touchids[i] == touchid)
 			break;
 	if (i >= state->ntouches) {
 		fprintf(stderr, "Released window was not touched\n");
