@@ -11,25 +11,25 @@
 #define GRID_Y 70
 #define TOP_Y 400
 
+#define IR 160
+#define DR 80
+#define DTH (14 * 64)
+#define CX 0
+#define CY 700
+
+#define TRANSPARENT 0
 #define PRESSED_COLOR 0xd0888a85
 #define UNPRESSED_COLOR 0xd0204a87
 #define BORDER_COLOR 0xffeeeeec
 
 /*
- * Represents one button in a given layout
- */
-struct layout_btn {
-	int8_t x, y;
-	uint8_t h;
-	uint8_t bits;
-};
-
-/*
  * Window corresponding to button
  */
 struct layout_win {
-	int x, y;
-	unsigned int w, h;
+	int r1, r2;
+	// In 1/64ths of degrees (i.e. # degrees * 64)
+	int th, dth;
+	unsigned int cx, cy;
 	uint8_t bits;
 };
 
@@ -56,26 +56,26 @@ struct kbd_state {
 
 
 /*
- * Default button layout (modeled after Android GKOS app)
+ * Represents one button in a given layout
+ */
+struct layout_btn {
+	uint8_t row;
+	uint8_t th, dth;
+	uint8_t bits;
+};
+
+/*
+ * Default button layout
  */
 static const struct layout_btn default_btns[] = {
-	{0, 0, 1, 1},
-	{0, 1, 1, 3},
-	{0, 2, 1, 2},
-	{0, 3, 1, 6},
-	{0, 4, 1, 4},
+	{1, 0, 1, 4},
+	{1, 1, 1, 6},
+	{1, 2, 1, 2},
+	{1, 3, 1, 3},
+	{1, 4, 1, 1},
 
-	{1, 1, 1, 5},
-	{1, 2, 3, 7},
-
-	{-2, 1, 1, 40},
-	{-2, 2, 3, 56},
-
-	{-1, 0, 1, 8},
-	{-1, 1, 1, 24},
-	{-1, 2, 1, 16},
-	{-1, 3, 1, 48},
-	{-1, 4, 1, 32},
+	{0, 0, 3, 7},
+	{0, 3, 2, 5},
 };
 
 #endif

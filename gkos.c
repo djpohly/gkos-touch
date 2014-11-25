@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <math.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
@@ -152,10 +153,11 @@ struct layout_win *get_layout_win(struct kbd_state *state, double x, double y)
 {
 	int i;
 	for (i = 0; i < state->nwins; i++) {
-		if (x >= state->wins[i].x &&
-				x <= state->wins[i].x + state->wins[i].w &&
-				y >= state->wins[i].y &&
-				y <= state->wins[i].y + state->wins[i].h)
+		double r = sqrt(pow(x - state->wins[i].cx, 2) + pow(state->wins[i].cy - y, 2));
+		int th = 64 * 180 * atan2(state->wins[i].cy - y, x - state->wins[i].cx) / M_PI;
+		if (r >= state->wins[i].r1 && r <= state->wins[i].r2 &&
+				th <= state->wins[i].th &&
+				th >= state->wins[i].th + state->wins[i].dth)
 			return &state->wins[i];
 	}
 	return NULL;
@@ -206,17 +208,12 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 
 	for (i = 0; i < state->nwins; i++) {
 		// Calculate window position in grid
-		int x = btns[i].x * GRID_X;
-		if (x < 0)
-			x += swidth;
-		int y = btns[i].y * GRID_Y + TOP_Y;
-		int h = btns[i].h * GRID_Y;
-
-		// Save geometry and info
-		state->wins[i].x = x;
-		state->wins[i].y = y;
-		state->wins[i].w = GRID_X;
-		state->wins[i].h = h;
+		state->wins[i].r1 = IR + btns[i].row * DR;
+		state->wins[i].r2 = state->wins[i].r1 + DR;
+		state->wins[i].th = 5760 - btns[i].th * DTH;
+		state->wins[i].dth = -btns[i].dth * DTH;
+		state->wins[i].cx = CX;
+		state->wins[i].cy = CY;
 		state->wins[i].bits = btns[i].bits;
 	}
 
@@ -272,13 +269,48 @@ void highlight_win(struct kbd_state *state, struct layout_win *win, int on)
 	// Fill
 	XSetForeground(state->dpy, state->gc,
 			on ? PRESSED_COLOR : UNPRESSED_COLOR);
-	XFillRectangle(state->dpy, state->win, state->gc,
-			win->x, win->y, win->w, win->h);
+	XFillArc(state->dpy, state->win, state->gc,
+			win->cx - win->r2, win->cy - win->r2,
+			2*win->r2, 2*win->r2,
+			win->th, win->dth);
+	XSetForeground(state->dpy, state->gc, TRANSPARENT);
+	XFillArc(state->dpy, state->win, state->gc,
+			win->cx - win->r1, win->cy - win->r1,
+			2*win->r1, 2*win->r1,
+			win->th, win->dth);
 
 	// Border
 	XSetForeground(state->dpy, state->gc, BORDER_COLOR);
-	XDrawRectangle(state->dpy, state->win, state->gc,
-			win->x, win->y, win->w, win->h);
+	XArc arcs[] = {
+		{
+			.x = win->cx - win->r2, .y = win->cy - win->r2,
+			.width = 2*win->r2, .height = 2*win->r2,
+			.angle1 = win->th, .angle2 = win->dth,
+		},
+		{
+			.x = win->cx - win->r1, .y = win->cy - win->r1,
+			.width = 2*win->r1, .height = 2*win->r1,
+			.angle1 = win->th, .angle2 = win->dth,
+		},
+	};
+	XDrawArcs(state->dpy, state->win, state->gc,
+			arcs, sizeof(arcs)/sizeof(arcs[0]));
+	XSegment segs[] = {
+		{
+			.x1 = win->cx + win->r2 * cos(M_PI * win->th / 11520.0),
+			.x2 = win->cx + win->r1 * cos(M_PI * win->th / 11520.0),
+			.y1 = win->cy - win->r2 * sin(M_PI * win->th / 11520.0),
+			.y2 = win->cy - win->r1 * sin(M_PI * win->th / 11520.0),
+		},
+		{
+			.x1 = win->cx + win->r2 * cos(M_PI * (win->th+win->dth) / 11520.0),
+			.x2 = win->cx + win->r1 * cos(M_PI * (win->th+win->dth) / 11520.0),
+			.y1 = win->cy - win->r2 * sin(M_PI * (win->th+win->dth) / 11520.0),
+			.y2 = win->cy - win->r1 * sin(M_PI * (win->th+win->dth) / 11520.0),
+		},
+	};
+	XDrawSegments(state->dpy, state->win, state->gc,
+			segs, sizeof(segs)/sizeof(segs[0]));
 }
 
 /*
