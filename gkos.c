@@ -307,14 +307,8 @@ void update_display(struct kbd_state *state)
 /*
  * Remember a window as "touched" at the start of a touch event
  */
-int add_touch(struct kbd_state *state, double x, double y, int touchid)
+int add_touch(struct kbd_state *state, struct layout_win *lwin, int touchid)
 {
-	struct layout_win *lwin = get_layout_win(state, x, y);
-	if (!lwin) {
-		fprintf(stderr, "Couldn't get touched window\n");
-		return 1;
-	}
-
 	int i;
 	for (i = 0; i < state->ntouches && state->touchids[i]; i++)
 		;
@@ -330,21 +324,25 @@ int add_touch(struct kbd_state *state, double x, double y, int touchid)
 }
 
 /*
- * Unregister a touched window when the touch is released
+ * Find the touch index corresponding to the given touch event ID
  */
-int remove_touch(struct kbd_state *state, int touchid)
+int get_touch_index(struct kbd_state *state, int touchid)
 {
 	int i;
 	for (i = 0; i < state->ntouches; i++)
 		if (state->touchids[i] == touchid)
-			break;
-	if (i >= state->ntouches) {
-		fprintf(stderr, "Released window was not touched\n");
-		return 1;
-	}
+			return i;
 
-	state->touches[i] = NULL;
-	state->touchids[i] = 0;
+	return -1;
+}
+
+/*
+ * Unregister a touched window when the touch is released
+ */
+int remove_touch(struct kbd_state *state, int index)
+{
+	state->touches[index] = NULL;
+	state->touchids[index] = 0;
 	update_display(state);
 	return 0;
 }
@@ -364,30 +362,54 @@ void handle_press(void *arg, unsigned long sym, int press)
  */
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 {
+	struct layout_win *lwin;
+	int idx;
+
 	switch (ev->evtype) {
 		case XI_TouchBegin:
+			// Claim the touch event
 			XIAllowTouchEvents(state->dpy, state->input_dev,
 					ev->detail, ev->event, XIAcceptTouch);
-			if (!ev->child || ev->child == state->win)
-				break;
-			if (add_touch(state, ev->root_x, ev->root_y, ev->detail))
+
+			// Find and record which window was touched
+			lwin = get_layout_win(state, ev->root_x, ev->root_y);
+			if (add_touch(state, lwin, ev->detail))
 				return 1;
+
+			// Comes after add_touch so we can recognize touches
+			// that were outside a defined window
+			if (!lwin)
+				break;
+
 			state->active = 1;
 			break;
 		case XI_TouchUpdate:
 			//fprintf(stderr, "touch update\n");
 			break;
 		case XI_TouchEnd:
-			if (!ev->child || ev->child == state->win) {
+			// Find which touch was released
+			idx = get_touch_index(state, ev->detail);
+			if (idx < 0) {
+				fprintf(stderr, "Released window was not touched\n");
+				return 1;
+			}
+
+			// Shut down on release of an outside touch
+			if (!state->touches[idx]) {
 				state->shutdown = 1;
 				break;
 			}
+
+			// If this is the first release after a touch, generate
+			// key event
 			if (state->active) {
 				chorder_press(&state->chorder,
 						get_pressed_bits(state));
 				state->active = 0;
 			}
-			if (remove_touch(state, ev->detail))
+
+			// Update touch tracking
+			if (remove_touch(state, idx))
 				return 1;
 			break;
 		default:
