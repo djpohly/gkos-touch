@@ -152,11 +152,10 @@ struct layout_win *get_layout_win(struct kbd_state *state, double x, double y)
 {
 	int i;
 	for (i = 0; i < state->nwins; i++) {
-		XWindowAttributes attrs;
-		XGetWindowAttributes(state->dpy, state->wins[i].win, &attrs);
-
-		if (x >= attrs.x && x <= attrs.x + attrs.width &&
-				y >= attrs.y && y <= attrs.y + attrs.height)
+		if (x >= state->wins[i].x &&
+				x <= state->wins[i].x + state->wins[i].w &&
+				y >= state->wins[i].y &&
+				y <= state->wins[i].y + state->wins[i].h)
 			return &state->wins[i];
 	}
 	return NULL;
@@ -223,6 +222,10 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 				state->xvi.depth, InputOutput, state->xvi.visual,
 				CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWColormap,
 				&attrs);
+		state->wins[i].x = x;
+		state->wins[i].y = y;
+		state->wins[i].w = GRID_X;
+		state->wins[i].h = h;
 		state->wins[i].bits = btns[i].bits;
 	}
 
