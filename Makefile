@@ -1,7 +1,7 @@
 BINS = gkos symname chorder_test
 OBJS = gkos.o chorder.o chorder_test.o
 
-CFLAGS = -g -Wall -Wextra -Werror -Wno-error=unused-parameter -Wno-error=unused-function
+CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -Werror -Wno-error=unused-parameter -Wno-error=unused-function
 LDFLAGS = -g
 
 all: $(BINS)
