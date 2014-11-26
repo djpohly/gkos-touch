@@ -23,9 +23,9 @@
 #define BORDER_COLOR 0xffeeeeec
 
 /*
- * Window corresponding to button
+ * Button geometry and info
  */
-struct layout_win {
+struct layout_btn {
 	int r1, r2;
 	// In 1/64ths of degrees (i.e. # degrees * 64)
 	int th, dth;
@@ -44,10 +44,10 @@ struct kbd_state {
 	GC gc;
 	int xi_opcode;
 	int input_dev;
-	int nwins;
+	int nbtns;
 	int ntouches;
-	struct layout_win *wins;
-	struct layout_win **touches;
+	struct layout_btn *btns;
+	struct layout_btn **touches;
 	int *touchids;
 	struct chorder chorder;
 	unsigned int active : 1;
@@ -58,7 +58,7 @@ struct kbd_state {
 /*
  * Represents one button in a given layout
  */
-struct layout_btn {
+struct layout {
 	uint8_t row;
 	uint8_t th, dth;
 	uint8_t bits;
@@ -67,7 +67,7 @@ struct layout_btn {
 /*
  * Default button layout
  */
-static const struct layout_btn default_btns[] = {
+static const struct layout default_btns[] = {
 	{1, 0, 1, 4},
 	{1, 1, 1, 6},
 	{1, 2, 1, 2},

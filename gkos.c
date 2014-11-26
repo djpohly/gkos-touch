@@ -53,8 +53,9 @@
 
 
 /*
- * Searches the input hierarchy for a touch-capable device.  The id parameter
- * gives a specific device ID to check, XIAllDevices, or XIAllMasterDevices.
+ * Searches the input hierarchy for a direct-touch device (e.g. a touchscreen,
+ * but not most touchpads).  The id parameter gives either a specific device ID
+ * to check or one of the special values XIAllDevices or XIAllMasterDevices.
  */
 int init_touch_device(struct kbd_state *state, int id)
 {
@@ -67,7 +68,7 @@ int init_touch_device(struct kbd_state *state, int id)
 		return 1;
 	}
 
-	// Find any direct touch devices (such as touchscreens)
+	// Find the first direct-touch device
 	int i;
 	for (i = 0; i < ndev; i++) {
 		int j;
@@ -90,6 +91,8 @@ done:
 		return 1;
 	}
 
+	// Allocate space for keeping track of currently held touches and the
+	// corresponding XInput touch event IDs
 	state->touches = calloc(state->ntouches, sizeof(state->touches[0]));
 	state->touchids = calloc(state->ntouches, sizeof(state->touchids[0]));
 
@@ -113,7 +116,7 @@ void destroy_touch_device(struct kbd_state *state)
 }
 
 /*
- * Establishes passive grabs for touch events on the given window
+ * Establishes an active grab on the touch device
  */
 int grab_touches(struct kbd_state *state)
 {
@@ -137,50 +140,49 @@ int grab_touches(struct kbd_state *state)
 }
 
 /*
- * Releases passive grabs for touch events
+ * Releases grab for the touch device
  */
 void ungrab_touches(struct kbd_state *state)
 {
-	// Ungrab all the things
 	XIUngrabDevice(state->dpy, state->input_dev, CurrentTime);
 }
 
 /*
- * Returns the button window structure, if any, at the given coordinates
+ * Returns the button structure, if any, at the given coordinates
  */
-struct layout_win *get_layout_win(struct kbd_state *state, double x, double y)
+struct layout_btn *get_layout_btn(struct kbd_state *state, double x, double y)
 {
 	int i;
-	for (i = 0; i < state->nwins; i++) {
-		double r = sqrt(pow(x - state->wins[i].cx, 2) + pow(state->wins[i].cy - y, 2));
-		int th = 64 * 180 * atan2(state->wins[i].cy - y, x - state->wins[i].cx) / M_PI;
-		if (r >= state->wins[i].r1 && r <= state->wins[i].r2 &&
-				th >= state->wins[i].th &&
-				th <= state->wins[i].th + state->wins[i].dth)
-			return &state->wins[i];
+	for (i = 0; i < state->nbtns; i++) {
+		double r = sqrt(pow(x - state->btns[i].cx, 2) + pow(state->btns[i].cy - y, 2));
+		int th = 64 * 180 * atan2(state->btns[i].cy - y, x - state->btns[i].cx) / M_PI;
+		if (r >= state->btns[i].r1 && r <= state->btns[i].r2 &&
+				th >= state->btns[i].th &&
+				th <= state->btns[i].th + state->btns[i].dth)
+			return &state->btns[i];
 	}
 	return NULL;
 }
 
 /*
- * Creates and maps windows for the GKOS keyboard.
+ * Creates the main window for the GKOS keyboard
  */
-int create_windows(struct kbd_state *state, const struct layout_btn *btns,
+int create_window(struct kbd_state *state, const struct layout *lt,
 		int num_btns)
 {
 	int i;
 
 	// Allocate space for keys on both sides
-	state->wins = calloc(num_btns * 2, sizeof(state->wins[0]));
-	if (!state->wins)
+	state->btns = calloc(num_btns * 2, sizeof(state->btns[0]));
+	if (!state->btns)
 		return 1;
-	state->nwins = num_btns * 2;
+	state->nbtns = num_btns * 2;
 
 	// Set up the class hint for the GKOS window
 	XClassHint *class = XAllocClassHint();
 	if (!class) {
 		fprintf(stderr, "Failed to allocate class hint\n");
-		free(state->wins);
+		free(state->btns);
 		return 1;
 	}
 	class->res_name = class->res_class = "GKOS-multitouch";
@@ -205,34 +207,37 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	// Free the class hint
 	XFree(class);
 
-	// Calculate key positions in grid
-	for (i = 0; i < state->nwins / 2; i++) {
+	// Calculate button positions in grid
+	for (i = 0; i < state->nbtns / 2; i++) {
 		// Index of mirrored key
-		int m = i + state->nwins / 2;
+		int m = i + state->nbtns / 2;
 
-		state->wins[i].r1 = state->wins[m].r1 = IR + btns[i].row * DR;
-		state->wins[i].r2 = state->wins[m].r2 = state->wins[i].r1 + DR;
-		state->wins[i].th = 5760 - (btns[i].th + btns[i].dth) * DTH;
-		state->wins[m].th = 5760 + btns[i].th * DTH;
-		state->wins[i].dth = state->wins[m].dth = btns[i].dth * DTH;
-		state->wins[i].cx = CX;
-		state->wins[m].cx = swidth - 1 - CX;
-		state->wins[i].cy = state->wins[m].cy = CY;
-		state->wins[i].bits = btns[i].bits;
-		state->wins[m].bits = btns[i].bits << 3;
+		state->btns[i].r1 = state->btns[m].r1 = IR + lt[i].row * DR;
+		state->btns[i].r2 = state->btns[m].r2 = state->btns[i].r1 + DR;
+		state->btns[i].th = 5760 - (lt[i].th + lt[i].dth) * DTH;
+		state->btns[m].th = 5760 + lt[i].th * DTH;
+		state->btns[i].dth = state->btns[m].dth = lt[i].dth * DTH;
+		state->btns[i].cx = CX;
+		state->btns[m].cx = swidth - 1 - CX;
+		state->btns[i].cy = state->btns[m].cy = CY;
+		state->btns[i].bits = lt[i].bits;
+		state->btns[m].bits = lt[i].bits << 3;
 	}
 
 	// Grab touch events for the new window
 	if (grab_touches(state)) {
 		fprintf(stderr, "Failed to grab touch event\n");
-		free(state->wins);
+		free(state->btns);
 		return 1;
 	}
 
 	return 0;
 }
 
-void map_windows(struct kbd_state *state)
+/*
+ * Map the main window and wait for confirmation
+ */
+void map_window(struct kbd_state *state)
 {
 	// Map everything and wait for the notify event
 	XMapWindow(state->dpy, state->win);
@@ -244,18 +249,18 @@ void map_windows(struct kbd_state *state)
 }
 
 /*
- * Tear down keyboard windows
+ * Tear down everything created in create_window
  */
-void destroy_windows(struct kbd_state *state)
+void destroy_window(struct kbd_state *state)
 {
-	free(state->wins);
+	free(state->btns);
 
 	ungrab_touches(state);
 	XDestroyWindow(state->dpy, state->win);
 }
 
 /*
- * Calculate the bits corresponding to the currently touched windows
+ * Calculate the bits corresponding to the currently touched buttons
  */
 uint8_t get_pressed_bits(struct kbd_state *state)
 {
@@ -268,51 +273,51 @@ uint8_t get_pressed_bits(struct kbd_state *state)
 }
 
 /*
- * Turn on/off a window's highlight
+ * Turn on/off a button's highlight
  */
-void highlight_win(struct kbd_state *state, struct layout_win *win, int on)
+void highlight_win(struct kbd_state *state, struct layout_btn *btn, int on)
 {
 	// Fill
 	XSetForeground(state->dpy, state->gc,
 			on ? PRESSED_COLOR : UNPRESSED_COLOR);
 	XFillArc(state->dpy, state->win, state->gc,
-			win->cx - win->r2, win->cy - win->r2,
-			2*win->r2, 2*win->r2,
-			win->th, win->dth);
+			btn->cx - btn->r2, btn->cy - btn->r2,
+			2*btn->r2, 2*btn->r2,
+			btn->th, btn->dth);
 	XSetForeground(state->dpy, state->gc, TRANSPARENT);
 	XFillArc(state->dpy, state->win, state->gc,
-			win->cx - win->r1, win->cy - win->r1,
-			2*win->r1, 2*win->r1,
-			win->th, win->dth);
+			btn->cx - btn->r1, btn->cy - btn->r1,
+			2*btn->r1, 2*btn->r1,
+			btn->th, btn->dth);
 
 	// Border
 	XSetForeground(state->dpy, state->gc, BORDER_COLOR);
 	XArc arcs[] = {
 		{
-			.x = win->cx - win->r2, .y = win->cy - win->r2,
-			.width = 2*win->r2, .height = 2*win->r2,
-			.angle1 = win->th, .angle2 = win->dth,
+			.x = btn->cx - btn->r2, .y = btn->cy - btn->r2,
+			.width = 2*btn->r2, .height = 2*btn->r2,
+			.angle1 = btn->th, .angle2 = btn->dth,
 		},
 		{
-			.x = win->cx - win->r1, .y = win->cy - win->r1,
-			.width = 2*win->r1, .height = 2*win->r1,
-			.angle1 = win->th, .angle2 = win->dth,
+			.x = btn->cx - btn->r1, .y = btn->cy - btn->r1,
+			.width = 2*btn->r1, .height = 2*btn->r1,
+			.angle1 = btn->th, .angle2 = btn->dth,
 		},
 	};
 	XDrawArcs(state->dpy, state->win, state->gc,
 			arcs, sizeof(arcs)/sizeof(arcs[0]));
 	XSegment segs[] = {
 		{
-			.x1 = win->cx + win->r2 * cos(M_PI * win->th / 11520.0),
-			.x2 = win->cx + win->r1 * cos(M_PI * win->th / 11520.0),
-			.y1 = win->cy - win->r2 * sin(M_PI * win->th / 11520.0),
-			.y2 = win->cy - win->r1 * sin(M_PI * win->th / 11520.0),
+			.x1 = btn->cx + btn->r2 * cos(M_PI * btn->th / 11520.0),
+			.x2 = btn->cx + btn->r1 * cos(M_PI * btn->th / 11520.0),
+			.y1 = btn->cy - btn->r2 * sin(M_PI * btn->th / 11520.0),
+			.y2 = btn->cy - btn->r1 * sin(M_PI * btn->th / 11520.0),
 		},
 		{
-			.x1 = win->cx + win->r2 * cos(M_PI * (win->th+win->dth) / 11520.0),
-			.x2 = win->cx + win->r1 * cos(M_PI * (win->th+win->dth) / 11520.0),
-			.y1 = win->cy - win->r2 * sin(M_PI * (win->th+win->dth) / 11520.0),
-			.y2 = win->cy - win->r1 * sin(M_PI * (win->th+win->dth) / 11520.0),
+			.x1 = btn->cx + btn->r2 * cos(M_PI * (btn->th+btn->dth) / 11520.0),
+			.x2 = btn->cx + btn->r1 * cos(M_PI * (btn->th+btn->dth) / 11520.0),
+			.y1 = btn->cy - btn->r2 * sin(M_PI * (btn->th+btn->dth) / 11520.0),
+			.y2 = btn->cy - btn->r1 * sin(M_PI * (btn->th+btn->dth) / 11520.0),
 		},
 	};
 	XDrawSegments(state->dpy, state->win, state->gc,
@@ -320,22 +325,22 @@ void highlight_win(struct kbd_state *state, struct layout_win *win, int on)
 }
 
 /*
- * Highlight windows according to what is currently pressed
+ * Highlight buttons according to what is currently pressed
  */
 void update_display(struct kbd_state *state)
 {
 	uint8_t bits = get_pressed_bits(state);
 	int i;
-	for (i = 0; i < state->nwins; i++) {
-		int on = (bits & state->wins[i].bits) == state->wins[i].bits;
-		highlight_win(state, &state->wins[i], on);
+	for (i = 0; i < state->nbtns; i++) {
+		int on = (bits & state->btns[i].bits) == state->btns[i].bits;
+		highlight_win(state, &state->btns[i], on);
 	}
 }
 
 /*
- * Remember a window as "touched" at the start of a touch event
+ * Remember a button as "touched" at the start of a touch event
  */
-int add_touch(struct kbd_state *state, struct layout_win *lwin, int touchid)
+int add_touch(struct kbd_state *state, struct layout_btn *btn, int touchid)
 {
 	int i;
 	for (i = 0; i < state->ntouches && state->touchids[i]; i++)
@@ -345,7 +350,7 @@ int add_touch(struct kbd_state *state, struct layout_win *lwin, int touchid)
 		return 1;
 	}
 
-	state->touches[i] = lwin;
+	state->touches[i] = btn;
 	state->touchids[i] = touchid;
 	update_display(state);
 	return 0;
@@ -365,7 +370,7 @@ int get_touch_index(struct kbd_state *state, int touchid)
 }
 
 /*
- * Unregister a touched window when the touch is released
+ * Unregister a touched button when the touch is released
  */
 int remove_touch(struct kbd_state *state, int index)
 {
@@ -376,7 +381,7 @@ int remove_touch(struct kbd_state *state, int index)
 }
 
 /*
- * Chorder press handler
+ * Keypress implementation to pass to chorder object
  */
 void handle_press(void *arg, unsigned long sym, int press)
 {
@@ -390,7 +395,7 @@ void handle_press(void *arg, unsigned long sym, int press)
  */
 int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 {
-	struct layout_win *lwin;
+	struct layout_btn *btn;
 	int idx;
 
 	switch (ev->evtype) {
@@ -399,21 +404,19 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 			XIAllowTouchEvents(state->dpy, state->input_dev,
 					ev->detail, ev->event, XIAcceptTouch);
 
-			// Find and record which window was touched
-			lwin = get_layout_win(state, ev->root_x, ev->root_y);
-			if (add_touch(state, lwin, ev->detail))
+			// Find and record which button was touched
+			btn = get_layout_btn(state, ev->root_x, ev->root_y);
+			if (add_touch(state, btn, ev->detail))
 				return 1;
 
-			// Comes after add_touch so we can recognize touches
-			// that were outside a defined window
-			if (!lwin)
+			// Comes after add_touch so we remember which touches
+			// were outside a defined button
+			if (!btn)
 				break;
 
 			state->active = 1;
 			break;
-		case XI_TouchUpdate:
-			//fprintf(stderr, "touch update\n");
-			break;
+
 		case XI_TouchEnd:
 			// Find which touch was released
 			idx = get_touch_index(state, ev->detail);
@@ -440,6 +443,10 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 			if (remove_touch(state, idx))
 				return 1;
 			break;
+
+		case XI_TouchUpdate:
+			break;
+
 		default:
 			fprintf(stderr, "other event %d\n", ev->evtype);
 			break;
@@ -543,35 +550,34 @@ int main(int argc, char **argv)
 	state.cmap = XCreateColormap(state.dpy, DefaultRootWindow(state.dpy),
 			state.xvi.visual, AllocNone);
 
-	// Create windows for keyboard
-	ret = create_windows(&state, default_btns,
+	// Create main window and keyboard buttons
+	ret = create_window(&state, default_btns,
 			sizeof(default_btns) / sizeof(default_btns[0]));
 	if (ret) {
 		fprintf(stderr, "Failed to create windows\n");
 		goto out_free_cmap;
 	}
 
+	// Create a GC to use
 	state.gc = XCreateGC(state.dpy, state.win, 0, NULL);
 
-	map_windows(&state);
+	// Display the window
+	map_window(&state);
 	update_display(&state);
 
 	ret = event_loop(&state);
 
+	// Clean everything up
 	XFreeGC(state.dpy, state.gc);
-
-	destroy_windows(&state);
-
+	destroy_window(&state);
 out_free_cmap:
 	XFreeColormap(state.dpy, state.cmap);
-
 out_destroy_touch:
 	destroy_touch_device(&state);
-
 out_close:
 	XCloseDisplay(state.dpy);
-
 out_destroy_chorder:
 	chorder_destroy(&state.chorder);
+
 	return ret;
 }
