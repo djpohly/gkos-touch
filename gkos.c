@@ -91,14 +91,11 @@ done:
 	}
 
 	state->touches = calloc(state->ntouches, sizeof(state->touches[0]));
-	if (!state->touches) {
-		fprintf(stderr, "Failed to allocate touches\n");
-		return 1;
-	}
-
 	state->touchids = calloc(state->ntouches, sizeof(state->touchids[0]));
-	if (!state->touchids) {
-		fprintf(stderr, "Failed to allocate touchids\n");
+
+	if (!state->touches || !state->touchids) {
+		fprintf(stderr, "Failed to allocate touches/IDs\n");
+		free(state->touchids);
 		free(state->touches);
 		return 1;
 	}
