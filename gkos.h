@@ -29,7 +29,7 @@ struct layout_win {
 	int r1, r2;
 	// In 1/64ths of degrees (i.e. # degrees * 64)
 	int th, dth;
-	unsigned int cx, cy;
+	int cx, cy;
 	uint8_t bits;
 };
 

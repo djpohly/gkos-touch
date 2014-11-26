@@ -156,8 +156,8 @@ struct layout_win *get_layout_win(struct kbd_state *state, double x, double y)
 		double r = sqrt(pow(x - state->wins[i].cx, 2) + pow(state->wins[i].cy - y, 2));
 		int th = 64 * 180 * atan2(state->wins[i].cy - y, x - state->wins[i].cx) / M_PI;
 		if (r >= state->wins[i].r1 && r <= state->wins[i].r2 &&
-				th <= state->wins[i].th &&
-				th >= state->wins[i].th + state->wins[i].dth)
+				th >= state->wins[i].th &&
+				th <= state->wins[i].th + state->wins[i].dth)
 			return &state->wins[i];
 	}
 	return NULL;
@@ -171,13 +171,13 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 {
 	int i;
 
-	// Allocate space for windows
-	state->wins = calloc(num_btns, sizeof(state->wins[0]));
+	// Allocate space for keys on both sides
+	state->wins = calloc(num_btns * 2, sizeof(state->wins[0]));
 	if (!state->wins)
 		return 1;
-	state->nwins = num_btns;
+	state->nwins = num_btns * 2;
 
-	// Set up the class hint for the windows
+	// Set up the class hint for the GKOS window
 	XClassHint *class = XAllocClassHint();
 	if (!class) {
 		fprintf(stderr, "Failed to allocate class hint\n");
@@ -206,15 +206,21 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	// Free the class hint
 	XFree(class);
 
-	for (i = 0; i < state->nwins; i++) {
-		// Calculate window position in grid
-		state->wins[i].r1 = IR + btns[i].row * DR;
-		state->wins[i].r2 = state->wins[i].r1 + DR;
-		state->wins[i].th = 5760 - btns[i].th * DTH;
-		state->wins[i].dth = -btns[i].dth * DTH;
+	// Calculate key positions in grid
+	for (i = 0; i < state->nwins / 2; i++) {
+		// Index of mirrored key
+		int m = i + state->nwins / 2;
+
+		state->wins[i].r1 = state->wins[m].r1 = IR + btns[i].row * DR;
+		state->wins[i].r2 = state->wins[m].r2 = state->wins[i].r1 + DR;
+		state->wins[i].th = 5760 - (btns[i].th + btns[i].dth) * DTH;
+		state->wins[m].th = 5760 + btns[i].th * DTH;
+		state->wins[i].dth = state->wins[m].dth = btns[i].dth * DTH;
 		state->wins[i].cx = CX;
-		state->wins[i].cy = CY;
+		state->wins[m].cx = swidth - 1 - CX;
+		state->wins[i].cy = state->wins[m].cy = CY;
 		state->wins[i].bits = btns[i].bits;
+		state->wins[m].bits = btns[i].bits << 3;
 	}
 
 	// Grab touch events for the new window
