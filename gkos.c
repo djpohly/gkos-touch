@@ -220,6 +220,7 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	// Grab touch events for the new window
 	if (grab_touches(state)) {
 		fprintf(stderr, "Failed to grab touch event\n");
+		free(state->wins);
 		return 1;
 	}
 
