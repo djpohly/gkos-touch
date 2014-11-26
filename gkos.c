@@ -191,8 +191,8 @@ int create_windows(struct kbd_state *state, const struct layout_btn *btns,
 	int swidth = WidthOfScreen(scr);
 	int sheight = HeightOfScreen(scr);
 	XSetWindowAttributes attrs = {
-		.background_pixel = 0x00000000,
-		.border_pixel = 0x00000000,
+		.background_pixel = TRANSPARENT,
+		.border_pixel = TRANSPARENT,
 		.override_redirect = True,
 		.colormap = state->cmap,
 	};
