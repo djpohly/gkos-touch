@@ -400,6 +400,9 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 
 	switch (ev->evtype) {
 		case XI_TouchBegin:
+			// Bring window to top if it isn't
+			XRaiseWindow(state->dpy, state->win);
+
 			// Claim the touch event
 			XIAllowTouchEvents(state->dpy, state->input_dev,
 					ev->detail, ev->event, XIAcceptTouch);
