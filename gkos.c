@@ -425,8 +425,16 @@ int handle_xi_event(struct kbd_state *state, XIDeviceEvent *ev)
 				return 1;
 			}
 
-			// Shut down on release of an outside touch
-			if (!state->touches[idx]) {
+			// Shut down on double-touch outside keyboard
+			int misses = 0;
+			int i;
+			for (i = 0; i < state->ntouches; i++) {
+				if (state->touchids[i] && !state->touches[i])
+					misses++;
+				if (misses >= 2)
+					break;
+			}
+			if (misses >= 2) {
 				state->shutdown = 1;
 				break;
 			}
