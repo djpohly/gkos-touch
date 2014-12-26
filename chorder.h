@@ -19,7 +19,7 @@ enum chord_type {
 	TYPE_MAP,
 	// Selects the keymap to use until another is explicitly selected
 	TYPE_MAPLOCK,
-	// Executes a sequence of chords
+	// Executes a sequence of chord entries
 	TYPE_MACRO,
 };
 

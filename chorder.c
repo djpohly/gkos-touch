@@ -118,11 +118,11 @@ struct chord_entry *chorder_get_entry(const struct chorder *kbd,
 /*
  * Handles a chord press on a chorder
  */
-int chorder_press(struct chorder *kbd, unsigned long entry)
+int do_chorder_press(struct chorder *kbd, struct chord_entry *e)
 {
 	int rv;
+	struct chord_entry *macro;
 
-	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
 	switch (e->type) {
 		case TYPE_NONE:
 			fprintf(stderr, "not mapped\n");
@@ -207,8 +207,16 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 			kbd->maplock = 1;
 			break;
 		case TYPE_MACRO:
-			fprintf(stderr, "macro not implemented\n");
+			// Handle each entry in turn
+			for (macro = e->arg.ptr; macro->type != TYPE_NONE; macro++)
+				do_chorder_press(kbd, macro);
 			break;
 	}
 	return 0;
+}
+
+int chorder_press(struct chorder *kbd, unsigned long entry)
+{
+	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
+	return do_chorder_press(kbd, e);
 }
