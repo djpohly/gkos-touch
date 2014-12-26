@@ -26,7 +26,11 @@ enum chord_type {
 // Single entry in a keymap
 struct chord_entry {
 	enum chord_type type;
-	unsigned long val;
+	union {
+		unsigned long code;
+		unsigned int map;
+		void *ptr;
+	} arg;
 };
 
 // Stack data structure for mod keys

@@ -1,6 +1,5 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
-from __future__ import print_function, unicode_literals
 import sys
 import json
 import subprocess
@@ -84,7 +83,7 @@ def keysym(d, i):
 #    except KeyError:
 #        pass
     if len(orig) == 1:
-        return 'KEY', subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]])
+        return 'KEY', subprocess.check_output(['./symname', 'U00' + hex(ord(orig))[2:]]).decode()
     if orig == '_Ins':
         return 'KEY', 'XK_Insert'
     if orig[0] == '_':
@@ -95,6 +94,16 @@ def keysym(d, i):
         return 'MAP', namemap[orig[1:]]
     return 'NONE', 'NoSymbol'
     #return 'MACRO', '"' + orig + '"'
+
+argtype = {
+        "NONE": "code",
+        "KEY": "code",
+        "MOD": "code",
+        "MODLOCK": "code",
+        "MAP": "map",
+        "MAPLOCK": "map",
+        "MACRO": "ptr",
+}
 
 print('enum chordmap {')
 for k in namemap_order:
@@ -107,7 +116,8 @@ print('struct chord_entry map[][64] = {')
 for k in namemap_order:
     print('\t[', namemap[k], '] = {', sep='')
     for i in range(64):
-        print('\t\t{.type=TYPE_', ', .val='.join(keysym(x[k], i)), '},', sep='')
+        kind, val = keysym(x[k], i)
+        print('\t\t{.type=TYPE_%s, .arg.%s=%s},' % (kind, argtype[kind], val))
     print('\t},')
 
 print('};')

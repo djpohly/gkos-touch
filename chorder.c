@@ -130,8 +130,8 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 		case TYPE_KEY:
 			// Until there's a nice way to handle it, holding
 			// regular keys is not supported
-			kbd->press(kbd->arg, e->val, 1);
-			kbd->press(kbd->arg, e->val, 0);
+			kbd->press(kbd->arg, e->arg.code, 1);
+			kbd->press(kbd->arg, e->arg.code, 0);
 
 			// Release any pressed mods
 			unsigned long code = popmod(&kbd->mods);
@@ -146,24 +146,24 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 			break;
 		case TYPE_MOD:
 			// If the mod is locked, unpress it
-			if (!removemod(&kbd->lockmods, e->val)) {
-				kbd->press(kbd->arg, e->val, 0);
+			if (!removemod(&kbd->lockmods, e->arg.code)) {
+				kbd->press(kbd->arg, e->arg.code, 0);
 				break;
 			}
 
 			// Otherwise, if it's pressed, lock it down
-			if (!removemod(&kbd->mods, e->val)) {
-				rv = pushmod(&kbd->lockmods, e->val);
+			if (!removemod(&kbd->mods, e->arg.code)) {
+				rv = pushmod(&kbd->lockmods, e->arg.code);
 				if (rv)
 					return rv;
 				break;
 			}
 
 			// Otherwise it's not pressed, so press it
-			rv = pushmod(&kbd->mods, e->val);
+			rv = pushmod(&kbd->mods, e->arg.code);
 			if (rv)
 				return rv;
-			kbd->press(kbd->arg, e->val, 1);
+			kbd->press(kbd->arg, e->arg.code, 1);
 
 			// Switch back to default map if not locked
 			if (!kbd->maplock)
@@ -173,19 +173,19 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 			// Straight to locked mod
 
 			// If already locked, toggle it off
-			if (!removemod(&kbd->lockmods, e->val)) {
-				kbd->press(kbd->arg, e->val, 0);
+			if (!removemod(&kbd->lockmods, e->arg.code)) {
+				kbd->press(kbd->arg, e->arg.code, 0);
 				break;
 			}
 
 			// Otherwise it's not pressed, so press it
-			rv = pushmod(&kbd->lockmods, e->val);
+			rv = pushmod(&kbd->lockmods, e->arg.code);
 			if (rv)
 				return rv;
-			kbd->press(kbd->arg, e->val, 1);
+			kbd->press(kbd->arg, e->arg.code, 1);
 			break;
 		case TYPE_MAP:
-			if (kbd->current_map == e->val) {
+			if (kbd->current_map == e->arg.map) {
 				// If we're already on this map...
 				if (kbd->maplock) {
 					// and it's locked, release
@@ -197,13 +197,13 @@ int chorder_press(struct chorder *kbd, unsigned long entry)
 				}
 			} else {
 				// Otherwise, switch to the map
-				kbd->current_map = e->val;
+				kbd->current_map = e->arg.map;
 				kbd->maplock = 0;
 			}
 			break;
 		case TYPE_MAPLOCK:
 			// Straight to locked map
-			kbd->current_map = e->val;
+			kbd->current_map = e->arg.map;
 			kbd->maplock = 1;
 			break;
 		case TYPE_MACRO:
