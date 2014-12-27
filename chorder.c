@@ -118,7 +118,7 @@ struct chord_entry *chorder_get_entry(const struct chorder *kbd,
 /*
  * Handles a chord press on a chorder
  */
-int do_chorder_press(struct chorder *kbd, struct chord_entry *e)
+static int handle_entry(struct chorder *kbd, struct chord_entry *e)
 {
 	int rv;
 	struct chord_entry *macro;
@@ -209,7 +209,7 @@ int do_chorder_press(struct chorder *kbd, struct chord_entry *e)
 		case TYPE_MACRO:
 			// Handle each entry in turn
 			for (macro = e->arg.ptr; macro->type != TYPE_NONE; macro++)
-				do_chorder_press(kbd, macro);
+				handle_entry(kbd, macro);
 			break;
 	}
 	return 0;
@@ -218,5 +218,5 @@ int do_chorder_press(struct chorder *kbd, struct chord_entry *e)
 int chorder_press(struct chorder *kbd, unsigned long entry)
 {
 	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
-	return do_chorder_press(kbd, e);
+	return handle_entry(kbd, e);
 }
