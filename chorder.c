@@ -118,14 +118,14 @@ struct chord_entry *chorder_get_entry(const struct chorder *kbd,
 /*
  * Handles a chord press on a chorder
  */
-static int handle_entry(struct chorder *kbd, struct chord_entry *e)
+static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro)
 {
 	int rv;
 	struct chord_entry *macro;
 
 	switch (e->type) {
 		case TYPE_NONE:
-			fprintf(stderr, "not mapped\n");
+			fprintf(stderr, "chorder: not mapped\n");
 			break;
 		case TYPE_KEY:
 			// Until there's a nice way to handle it, holding
@@ -207,9 +207,17 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e)
 			kbd->maplock = 1;
 			break;
 		case TYPE_MACRO:
+			// Not allowed to nest macros
+			if (in_macro) {
+				fprintf(stderr, "chorder: nested macros are not supported\n");
+				return 1;
+			}
 			// Handle each entry in turn
-			for (macro = e->arg.ptr; macro->type != TYPE_NONE; macro++)
-				handle_entry(kbd, macro);
+			for (macro = e->arg.ptr; macro->type != TYPE_NONE; macro++) {
+				rv = handle_entry(kbd, macro, 1);
+				if (rv)
+					return rv;
+			}
 			break;
 	}
 	return 0;
@@ -218,5 +226,5 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e)
 int chorder_press(struct chorder *kbd, unsigned long entry)
 {
 	struct chord_entry *e = chorder_get_entry(kbd, kbd->current_map, entry);
-	return handle_entry(kbd, e);
+	return handle_entry(kbd, e, 0);
 }
