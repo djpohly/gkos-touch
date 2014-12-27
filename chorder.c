@@ -187,6 +187,11 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			kbd->press(kbd->arg, e->arg.code, 1);
 			break;
 		case TYPE_MAP:
+			// XXX Figure this out
+			if (in_macro) {
+				fprintf(stderr, "chorder: haven't thought about maps in macros yet\n");
+				return 1;
+			}
 			if (kbd->current_map == e->arg.map) {
 				// If we're already on this map...
 				if (kbd->maplock) {
@@ -204,6 +209,11 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			}
 			break;
 		case TYPE_MAPLOCK:
+			// XXX Figure this out
+			if (in_macro) {
+				fprintf(stderr, "chorder: haven't thought about maplocks in macros yet\n");
+				return 1;
+			}
 			// Straight to locked map
 			kbd->current_map = e->arg.map;
 			kbd->maplock = 1;
