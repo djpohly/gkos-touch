@@ -73,6 +73,8 @@ int chorder_init(struct chorder *kbd, const struct chord_entry *entries,
 	kbd->current_map = 0;
 	kbd->mods = NULL;
 	kbd->lockmods = NULL;
+	kbd->macromods = NULL;
+	kbd->macrolocks = NULL;
 	kbd->press = press;
 	kbd->arg = arg;
 	kbd->maplock = 0;
@@ -85,19 +87,19 @@ int chorder_init(struct chorder *kbd, const struct chord_entry *entries,
  */
 void chorder_destroy(struct chorder *kbd)
 {
-	// Release any pressed mods
-	unsigned long code = popmod(&kbd->mods);
-	while (code) {
-		kbd->press(kbd->arg, code, 0);
-		code = popmod(&kbd->mods);
-	}
+	unsigned long code;
 
-	// Release any locked mods
-	code = popmod(&kbd->lockmods);
-	while (code) {
+	// Release any pressed or locked mods from current macro
+	while ((code = popmod(&kbd->macromods)))
 		kbd->press(kbd->arg, code, 0);
-		code = popmod(&kbd->lockmods);
-	}
+	while ((code = popmod(&kbd->macrolocks)))
+		kbd->press(kbd->arg, code, 0);
+
+	// Release any pressed or locked mods
+	while ((code = popmod(&kbd->mods)))
+		kbd->press(kbd->arg, code, 0);
+	while ((code = popmod(&kbd->lockmods)))
+		kbd->press(kbd->arg, code, 0);
 	
 	free(kbd->entries);
 }

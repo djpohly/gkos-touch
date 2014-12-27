@@ -53,6 +53,10 @@ struct chorder {
 	struct mod_stack *mods;
 	struct mod_stack *lockmods;
 
+	// Additional mods being pressed/locked by a macro
+	struct mod_stack *macromods;
+	struct mod_stack *macrolocks;
+
 	// Function to call when a key is pressed
 	chorder_handler_t press;
 	// Opaque pointer passed to the press handler
