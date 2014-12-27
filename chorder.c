@@ -35,8 +35,8 @@ static unsigned long popmod(struct mod_stack **mods)
 }
 
 /*
- * Removes the given modifier from a mod stack, returning 0 if successful and
- * nonzero otherwise
+ * Removes the given modifier from a mod stack, returning 1 if found and 0
+ * otherwise
  */
 static int removemod(struct mod_stack **mods, unsigned long code)
 {
@@ -45,12 +45,12 @@ static int removemod(struct mod_stack **mods, unsigned long code)
 		if (node->code == code) {
 			*mods = node->next;
 			free(node);
-			return 0;
+			return 1;
 		}
 		mods = &(*mods)->next;
 		node = *mods;
 	}
-	return 1;
+	return 0;
 }
 
 /*
@@ -148,13 +148,13 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			break;
 		case TYPE_MOD:
 			// If the mod is locked, unpress it
-			if (!removemod(&kbd->lockmods, e->arg.code)) {
+			if (removemod(&kbd->lockmods, e->arg.code)) {
 				kbd->press(kbd->arg, e->arg.code, 0);
 				break;
 			}
 
 			// Otherwise, if it's pressed, lock it down
-			if (!removemod(&kbd->mods, e->arg.code)) {
+			if (removemod(&kbd->mods, e->arg.code)) {
 				rv = pushmod(&kbd->lockmods, e->arg.code);
 				if (rv)
 					return rv;
@@ -175,7 +175,7 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			// Straight to locked mod
 
 			// If already locked, toggle it off
-			if (!removemod(&kbd->lockmods, e->arg.code)) {
+			if (removemod(&kbd->lockmods, e->arg.code)) {
 				kbd->press(kbd->arg, e->arg.code, 0);
 				break;
 			}
