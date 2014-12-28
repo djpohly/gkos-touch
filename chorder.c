@@ -174,17 +174,20 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 		case TYPE_MODLOCK:
 			// Straight to locked mod
 
-			// If already locked, toggle it off
+			// If already locked, toggle it off and release
 			if (removemod(&kbd->lockmods, e->arg.code)) {
 				kbd->press(kbd->arg, e->arg.code, 0);
 				break;
 			}
 
-			// Otherwise it's not pressed, so press it
+			// Otherwise we're going to lock it...
 			rv = pushmod(&kbd->lockmods, e->arg.code);
 			if (rv)
 				return rv;
-			kbd->press(kbd->arg, e->arg.code, 1);
+
+			// and press it if it wasn't already pressed
+			if (!removemod(&kbd->mods, e->arg.code))
+				kbd->press(kbd->arg, e->arg.code, 1);
 			break;
 		case TYPE_MAP:
 			// XXX Figure this out
