@@ -1,4 +1,7 @@
 Implement elisions (keycode + list of elided keycodes)
+- How to define them?
+- How do they interact with mods?
+- How do we elide e.g. " " with "Shift-1"?
 Don't reset shift on initial macro space (new TYPE_*?)
 Make speed tester that takes characters to alternate
 Make long ver. for all key combos L+R
