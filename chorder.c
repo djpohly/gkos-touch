@@ -35,6 +35,17 @@ static unsigned long popmod(struct mod_stack **mods)
 }
 
 /*
+ * Returns 1 if the given mod is already on the stack and 0 if it is not.
+ */
+static int hasmod(const struct mod_stack *mods, unsigned long code)
+{
+	for (/* mods */; mods; mods = mods->next)
+		if (mods->code == code)
+			return 1;
+	return 0;
+}
+
+/*
  * Removes the given modifier from a mod stack, returning 1 if found and 0
  * otherwise
  */
@@ -100,7 +111,7 @@ void chorder_destroy(struct chorder *kbd)
 		kbd->press(kbd->arg, code, 0);
 	while ((code = popmod(&kbd->lockmods)))
 		kbd->press(kbd->arg, code, 0);
-	
+
 	free(kbd->entries);
 }
 
@@ -124,62 +135,107 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 {
 	int rv;
 	struct chord_entry *macro;
+	struct mod_stack **mods, **locks;
+	unsigned long arg;
 
 	switch (e->type) {
 		case TYPE_NONE:
 			fprintf(stderr, "chorder: not mapped\n");
 			break;
 		case TYPE_KEY:
+			arg = e->arg.code;
 			// Until there's a nice way to handle it, holding
 			// regular keys is not supported
-			kbd->press(kbd->arg, e->arg.code, 1);
-			kbd->press(kbd->arg, e->arg.code, 0);
+			kbd->press(kbd->arg, arg, 1);
+			kbd->press(kbd->arg, arg, 0);
 
-			// Release any pressed mods
-			unsigned long code = popmod(&kbd->mods);
-			while (code) {
-				kbd->press(kbd->arg, code, 0);
-				code = popmod(&kbd->mods);
-			}
+			// Release any pressed mods: macro mods if they aren't
+			// pressed outside, and outside mods if they aren't
+			// locked inside the macro.
+			unsigned long code;
+			while ((code = popmod(&kbd->macromods)))
+				if (!hasmod(kbd->mods, code) &&
+						!hasmod(kbd->lockmods, code))
+					kbd->press(kbd->arg, code, 0);
+			while ((code = popmod(&kbd->mods)))
+				if (!hasmod(kbd->macrolocks, code))
+					kbd->press(kbd->arg, code, 0);
 			break;
 		case TYPE_MOD:
-			// If the mod is locked, unpress it
-			if (removemod(&kbd->lockmods, e->arg.code)) {
-				kbd->press(kbd->arg, e->arg.code, 0);
+			arg = e->arg.code;
+
+			// Manipulate the macro set of mod stacks if we are
+			// inside a macro, and the normal ones otherwise
+			if (in_macro) {
+				mods = &kbd->macromods;
+				locks = &kbd->macrolocks;
+			} else {
+				mods = &kbd->mods;
+				locks = &kbd->lockmods;
+			}
+
+			// If the mod is locked, unlock it
+			if (removemod(locks, arg)) {
+				// Register a release if we aren't in a macro or
+				// if the mod isn't being held outside the macro
+				if (!in_macro || (!hasmod(kbd->mods, arg) &&
+						!hasmod(kbd->lockmods, arg)))
+					kbd->press(kbd->arg, arg, 0);
 				break;
 			}
 
 			// Otherwise, if it's pressed, lock it down
-			if (removemod(&kbd->mods, e->arg.code)) {
-				rv = pushmod(&kbd->lockmods, e->arg.code);
+			if (removemod(mods, arg)) {
+				rv = pushmod(locks, arg);
 				if (rv)
 					return rv;
 				break;
 			}
 
 			// Otherwise it's not pressed, so press it
-			rv = pushmod(&kbd->mods, e->arg.code);
+			rv = pushmod(mods, arg);
 			if (rv)
 				return rv;
-			kbd->press(kbd->arg, e->arg.code, 1);
+
+			// Register a press if we aren't in a macro or
+			// if the mod isn't already pressed outside
+			if (!in_macro || (!hasmod(kbd->mods, arg) &&
+						!hasmod(kbd->lockmods, arg)))
+				kbd->press(kbd->arg, arg, 1);
 			break;
 		case TYPE_MODLOCK:
+			arg = e->arg.code;
+
 			// Straight to locked mod
 
+			// Manipulate the macro set of mod stacks if we are
+			// inside a macro, and the normal ones otherwise
+			if (in_macro) {
+				mods = &kbd->macromods;
+				locks = &kbd->macrolocks;
+			} else {
+				mods = &kbd->mods;
+				locks = &kbd->lockmods;
+			}
+
 			// If already locked, toggle it off and release
-			if (removemod(&kbd->lockmods, e->arg.code)) {
-				kbd->press(kbd->arg, e->arg.code, 0);
+			if (removemod(locks, arg)) {
+				if (!in_macro || (!hasmod(kbd->mods, arg) &&
+							!hasmod(kbd->lockmods, arg)))
+					kbd->press(kbd->arg, arg, 0);
 				break;
 			}
 
 			// Otherwise we're going to lock it...
-			rv = pushmod(&kbd->lockmods, e->arg.code);
+			rv = pushmod(locks, arg);
 			if (rv)
 				return rv;
 
 			// and press it if it wasn't already pressed
-			if (!removemod(&kbd->mods, e->arg.code))
-				kbd->press(kbd->arg, e->arg.code, 1);
+			if (!removemod(mods, arg))
+				if (!in_macro || (!hasmod(kbd->mods, arg) &&
+							!hasmod(kbd->lockmods, arg)))
+					kbd->press(kbd->arg, arg, 1);
 			break;
 		case TYPE_MAP:
 			// XXX Figure this out
@@ -225,6 +281,14 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 				if (rv)
 					return rv;
 			}
+			// When the macro finishes, propagate any new mods to
+			// the outside state
+			// XXX Yes, this messes up the stack-ordering of the
+			// mods.  Does that matter?
+			while ((code = popmod(&kbd->macromods)))
+				pushmod(&kbd->mods, code);
+			while ((code = popmod(&kbd->macrolocks)))
+				pushmod(&kbd->lockmods, code);
 			break;
 	}
 

@@ -10,11 +10,14 @@ void mypress(void *unused, unsigned long code, int press)
 }
 
 struct chord_entry hello[] = {
+	{.type = TYPE_MOD, .arg.code = 'a'},
+	{.type = TYPE_MOD, .arg.code = 'a'},
 	{.type = TYPE_KEY, .arg.code = 'h'},
 	{.type = TYPE_KEY, .arg.code = 'e'},
 	{.type = TYPE_KEY, .arg.code = 'l'},
 	{.type = TYPE_MOD, .arg.code = 'l'},
 	{.type = TYPE_KEY, .arg.code = 'o'},
+	{.type = TYPE_MOD, .arg.code = 'l'},
 	{.type = TYPE_NONE},
 };
 
@@ -28,7 +31,7 @@ int main()
 	map[0][27] = (struct chord_entry) {.type = TYPE_MACRO, .arg.ptr = hello};
 	for (i = 1; i < 26; i++)
 		map[0][i] = (struct chord_entry) {.type = TYPE_KEY, .arg.code = '`' + i};
-	map[0][5].type = TYPE_MOD;
+	map[0][1].type = TYPE_MOD;
 	map[0][28] = (struct chord_entry) {.type = TYPE_MODLOCK, .arg.code = 'e'};
 
 	map[1][0] = (struct chord_entry) {.type = TYPE_MAP, .arg.map = 0};
@@ -45,7 +48,9 @@ int main()
 			sizeof(map[0])/sizeof(map[0][0]),
 			mypress, NULL);
 	assert(!rv);
-	// (map 0) macro: h e l MOD(l) o
+	// (map 0) mod: a
+	chorder_press(&kbd, 1);
+	// (map 0) macro: MOD(a) MOD(a) h e l MOD(l) o MOD(l)
 	chorder_press(&kbd, 27);
 	// (map 0) maplock: 1
 	chorder_press(&kbd, 26);

@@ -1,8 +1,3 @@
-Allow mods to behave independently in macros
-- e.g. macro $ = Shift + 4
-- Shift + $ = (no extra Shift) 4 (releases Shift)
-- ShiftLock + $ = (no extra Shift) 4 (still ShiftLock)
-- New TYPE_FORCEMOD?
 Implement elisions (keycode + list of elided keycodes)
 Don't reset shift on initial macro space (new TYPE_*?)
 Make speed tester that takes characters to alternate
