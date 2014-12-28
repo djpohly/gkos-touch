@@ -45,15 +45,25 @@ int main()
 			sizeof(map[0])/sizeof(map[0][0]),
 			mypress, NULL);
 	assert(!rv);
+	// (map 0) macro: h e l MOD(l) o
 	chorder_press(&kbd, 27);
+	// (map 0) maplock: 1
 	chorder_press(&kbd, 26);
+	// (map 1) key: D
 	chorder_press(&kbd, 4);
+	// (map 1) mod: E
 	chorder_press(&kbd, 5);
+	// (map 1) modlock: E
 	chorder_press(&kbd, 28);
+	// (map 1) key: V
 	chorder_press(&kbd, 22);
+	// (map 1) map: 1 (lock released)
 	chorder_press(&kbd, 26);
+	// (map 0) key: i
 	chorder_press(&kbd, 9);
+	// (map 0) key: n
 	chorder_press(&kbd, 14);
+	// releases locked mod E
 	chorder_destroy(&kbd);
 	return 0;
 }
