@@ -141,10 +141,6 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 				kbd->press(kbd->arg, code, 0);
 				code = popmod(&kbd->mods);
 			}
-
-			// Switch back to default map if not locked
-			if (!kbd->maplock)
-				kbd->current_map = 0;
 			break;
 		case TYPE_MOD:
 			// If the mod is locked, unpress it
@@ -166,10 +162,6 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			if (rv)
 				return rv;
 			kbd->press(kbd->arg, e->arg.code, 1);
-
-			// Switch back to default map if not locked
-			if (!kbd->maplock)
-				kbd->current_map = 0;
 			break;
 		case TYPE_MODLOCK:
 			// Straight to locked mod
@@ -235,6 +227,10 @@ static int handle_entry(struct chorder *kbd, struct chord_entry *e, int in_macro
 			}
 			break;
 	}
+
+	// Switch back to default map if it wasn't just set and isn't locked
+	if (e->type != TYPE_MAP && e->type != TYPE_MAPLOCK && !kbd->maplock)
+		kbd->current_map = 0;
 	return 0;
 }
 
